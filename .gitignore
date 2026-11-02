@@ -1,0 +1,20 @@
+# Secrets et configuration locale
+.env
+.env.*
+*.pem
+*.key
+
+# Bases locales (données réelles des prospects, jamais publiées)
+*.db
+*.sqlite
+*.sqlite3
+
+# Exports privés de prospection (seuls les CSV anonymisés vont dans prospection/donnees/)
+*.private.csv
+exports_prives/
+
+# Éditeurs / systèmes
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
