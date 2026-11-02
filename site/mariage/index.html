@@ -1,313 +1,165 @@
-<title>L., L. & T.</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Allura&family=Caveat:wght@500&family=Jost:wght@300;400;500&display=swap">
-<style>
-/* Layout : une carte par écran, défilement vertical aimanté, décor botanique dans les coins */
-:root{
-  --paper:#f7f0e3;
-  --paper-2:#efe6d3;
-  --ink:#3f4b3d;
-  --ink-soft:#6b7566;
-  --sage:#86a07f;
-  --sage-soft:#e2e7d6;
-  --butter:#f5d888;
-  --apricot:#f1a26a;
-  --blush:#f2b3bd;
-  --rose:#c96a78;
-  --f-script:"Allura","Brush Script MT",cursive;
-  --f-hand:"Caveat","Segoe Print","Bradley Hand",cursive;
-  --f-body:"Jost","Avenir Next","Segoe UI",system-ui,sans-serif;
-  color-scheme:light;
-  --k:1;--kt:1;
-}
-/* Téléphone : texte plus grand, ordinateur inchangé */
-@media (max-width:600px){:root{--k:1.27;--kt:1.12}}
-html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:calc(15px * var(--k));line-height:1.55;overflow:hidden}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:
-    radial-gradient(60% 40% at 100% 0%, color-mix(in srgb,var(--butter) 28%,transparent), transparent 70%),
-    radial-gradient(50% 35% at 0% 100%, color-mix(in srgb,var(--blush) 26%,transparent), transparent 70%),
-    radial-gradient(40% 30% at 100% 100%, color-mix(in srgb,var(--sage) 14%,transparent), transparent 70%)}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>L., L. &amp; T.</title>
 
-#deck{position:relative;z-index:1;height:100%;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
-.slide{position:relative;box-sizing:border-box;min-height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;place-items:center;padding-inline:22px;padding-block:56px;overflow:hidden}
-.inner{position:relative;z-index:2;width:100%;max-width:410px;display:flex;flex-direction:column;gap:14px}
+  <!-- Polices Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Allura&family=Caveat:wght@500&family=Jost:wght@300;400;500&display=swap">
 
-/* Typo */
-h2{font-family:var(--f-script);font-weight:400;font-size:calc(clamp(46px,13vw,58px) * var(--kt));line-height:1;color:var(--ink);margin:0;text-wrap:balance;padding-right:8px}
-h2 .heart{font-size:.4em;vertical-align:.9em;color:var(--rose);margin-left:6px}
-.head{display:flex;align-items:center;gap:12px}
-.head svg.ic{width:38px;height:38px;flex:none}
-p{margin:0}
-b{font-weight:500}
-.lead{font-weight:500;font-size:calc(16px * var(--k))}
-.hand{font-family:var(--f-hand);font-size:calc(22px * var(--k));line-height:1.25;color:var(--sage);text-align:center;text-wrap:balance}
-.small{font-size:calc(13.5px * var(--k));color:var(--ink-soft)}
-.pill{align-self:center;background:var(--sage-soft);border-radius:999px;padding:6px 20px;font-family:var(--f-hand);font-size:calc(21px * var(--k));color:var(--ink)}
-.heart-sm{color:var(--rose)}
+  <style>
+    /* ---------- Couleurs ---------- */
+    :root {
+      --papier: #f7f0e3;
+      --encre: #3f4b3d;
+      --encre-douce: #6b7566;
+      --sauge: #86a07f;
+      --rose: #c96a78;
+      --rose-clair: #f2b3bd;
+      --abricot: #f1a26a;
+      --beurre: #f5d888;
+    }
 
-/* Icônes trait */
-svg.ic{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    /* ---------- Page ---------- */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--papier);
+      color: var(--encre);
+      font-family: "Jost", sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+    }
 
-/* Décor botanique */
-.deco{position:absolute;z-index:1;pointer-events:none;width:clamp(110px,32vw,170px)}
-.deco svg{display:block;width:100%;height:auto;animation:sway 7s ease-in-out infinite;transform-origin:var(--o,0% 100%)}
-.deco.tl{top:-10px;left:-14px;--o:0% 0%}
-.deco.tr{top:-10px;right:-14px;--o:100% 0%}
-.deco.bl{bottom:-10px;left:-14px}
-.deco.br{bottom:-10px;right:-14px;--o:100% 100%}
-@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(2.5deg)}}
-.sun{position:absolute;z-index:1;width:54px;top:26px;right:26px;pointer-events:none}
-.sun svg{animation:spin 30s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+    /* ---------- Carte ---------- */
+    .carte {
+      max-width: 410px;
+      padding: 40px 22px;
+      text-align: center;
+    }
 
-/* Photos */
-.photo{border-radius:4px;overflow:hidden;background:#fff;padding:6px;box-shadow:0 10px 24px -12px rgba(63,75,61,.45);max-width:100%}
-.photo img{display:block;width:100%;height:auto;border-radius:2px}
-.duo{display:grid;grid-template-columns:1.5fr 1fr;gap:10px;align-items:center}
+    h1 {
+      margin: 0;
+      font-family: "Allura", cursive;
+      font-size: 60px;
+      font-weight: 400;
+      line-height: 1;
+    }
 
-/* Cover */
-.cover .inner{text-align:center;align-items:center;gap:10px}
-.names{font-family:var(--f-script);font-size:calc(clamp(50px,15vw,66px) * var(--kt));line-height:1;margin:0;font-weight:400}
-.eyebrow{text-transform:uppercase;letter-spacing:.18em;font-size:calc(12px * var(--k));color:var(--ink-soft)}
-.date{display:flex;gap:14px;align-items:center;font-size:calc(20px * var(--k));letter-spacing:.08em;font-weight:500}
-.date i{width:5px;height:5px;border-radius:50%;background:var(--sage);display:block}
-.archbox{position:relative;width:min(78%,300px)}
-.arch{width:100%;aspect-ratio:4/4.4;border-radius:999px 999px 18px 18px;overflow:hidden;box-shadow:0 18px 40px -20px rgba(63,75,61,.6);border:5px solid #fff;margin-top:6px;position:relative}
-.arch img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
-.seal{position:absolute;bottom:-14px;right:-16px;width:66px;height:66px;border-radius:50%;
-  background:radial-gradient(circle at 35% 30%,#e98d9b,var(--rose) 60%,#a9505e);display:grid;place-items:center;
-  color:#fff7f2;font-family:var(--f-script);font-size:calc(25px * var(--k));box-shadow:0 6px 14px -6px rgba(120,40,50,.6), inset 0 0 0 4px rgba(255,255,255,.18);z-index:3}
-.photo-wrap{position:relative;width:100%;display:flex;justify-content:center}
-.hint{margin-top:10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:calc(12px * var(--k));letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
-.hint svg{width:22px;height:22px;animation:nudge 1.8s ease-in-out infinite}
-@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+    .petit-titre {
+      margin: 10px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 12px;
+      color: var(--encre-douce);
+    }
 
-/* Timeline */
-.tl{position:relative;display:flex;flex-direction:column;gap:11px;padding-left:4px}
-.tl::before{content:"";position:absolute;left:52px;top:10px;bottom:16px;width:2px;background:var(--sage);border-radius:2px;transform-origin:top}
-.step{display:grid;grid-template-columns:36px 28px 1fr;align-items:start}
-.step svg.ic{width:34px;height:34px;stroke:var(--sage)}
-.dot{width:12px;height:12px;border-radius:50%;background:var(--sage);margin:5px 0 0 5px;box-shadow:0 0 0 4px var(--paper);position:relative;z-index:1}
-.step .t{font-weight:500;font-size:calc(15px * var(--k));line-height:1.2}
-.step .t em{font-style:normal;display:block;color:var(--sage);font-size:calc(13px * var(--k));letter-spacing:.06em}
-.step .d{font-size:calc(12.5px * var(--k));color:var(--ink-soft);line-height:1.4;margin-top:2px}
+    .date {
+      margin: 10px 0;
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+    }
 
-/* Bloc infos */
-.box{background:var(--sage-soft);border-radius:14px;padding:6px 16px}
-.row{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;padding-block:10px}
-.row+.row{border-top:1px solid color-mix(in srgb,var(--sage) 35%,transparent)}
-.row svg.ic{width:36px;height:36px}
-.row .small{font-size:calc(13px * var(--k))}
+    .date span {
+      color: var(--sauge);
+      margin: 0 8px;
+    }
 
-.route{display:flex;align-items:center;gap:10px;align-self:center}
-.route .plane{width:38px;height:38px}
-.route .r{display:flex;gap:12px;align-items:center;background:var(--sage-soft);border-radius:999px;padding:6px 18px;font-size:calc(18px * var(--k));letter-spacing:.04em}
-.route .r span{color:var(--sage)}
-.taxi{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start}
-.taxi svg{width:38px;height:38px}
+    .manuscrit {
+      font-family: "Caveat", cursive;
+      font-size: 22px;
+      line-height: 1.25;
+      color: var(--sauge);
+    }
 
-/* Dress code */
-.bans{display:flex;gap:24px;flex-wrap:wrap}
-.ban{display:flex;align-items:center;gap:10px;font-size:calc(14px * var(--k))}
-.ban i{width:28px;height:28px;border-radius:50%;border:2px solid var(--rose);position:relative;display:block}
-.ban i::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--rose);transform:translateX(-50%) rotate(45deg)}
-.ban i.w{background:#fff}.ban i.k{background:#2a2a2a}
-.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
-.sw{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:calc(12px * var(--k));color:var(--ink-soft)}
-.sw i{display:block;width:46px;height:46px;border-radius:50%;box-shadow:inset 0 -4px 0 rgba(0,0,0,.06),0 6px 12px -8px rgba(0,0,0,.35)}
+    .coeur {
+      color: var(--rose);
+    }
 
-/* Boutons */
-.btn{align-self:center;display:inline-flex;align-items:center;gap:10px;background:var(--sage);color:#fff;text-decoration:none;border:0;border-radius:999px;padding:14px 26px;font:500 calc(13px * var(--k))/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 22px -12px rgba(63,75,61,.8);transition:transform .2s, background .2s}
-.btn:hover{background:#748f6d}
-.btn:active{transform:scale(.97)}
-.btn:focus-visible,.nav button:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
-.toast{align-self:center;font-size:calc(13px * var(--k));color:var(--ink-soft);min-height:1.2em;text-align:center}
+    /* ---------- Illustration en CSS : coucher de soleil sur la mer ---------- */
+    .cadre {
+      position: relative;
+      width: 100%;
+      margin: 20px 0 26px;
+    }
 
-/* Fin */
-.final{text-align:center;align-items:center}
-.sign{font-family:var(--f-script);font-size:calc(44px * var(--kt));line-height:1}
-.merci{background:linear-gradient(180deg,var(--sage-soft),var(--paper) 55%)}
-.merci .hand{font-size:calc(26px * var(--k));color:var(--ink)}
-.count{display:flex;gap:18px;justify-content:center;font-variant-numeric:tabular-nums}
-.count div{display:flex;flex-direction:column;align-items:center}
-.count b{font-family:var(--f-body);font-weight:300;font-size:calc(34px * var(--k));line-height:1;color:var(--ink)}
-.count span{font-size:calc(11px * var(--k));letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
-.wide{width:calc(100% + 44px);margin-inline:-22px;max-width:none}
-.wide img{width:100%;display:block;-webkit-mask-image:linear-gradient(180deg,transparent,#000 30%);mask-image:linear-gradient(180deg,transparent,#000 30%)}
+    .illustration {
+      position: relative;
+      height: 380px;
+      overflow: hidden;
+      border: 5px solid #fff;
+      border-radius: 999px 999px 18px 18px;   /* forme d'arche */
+      box-shadow: 0 18px 40px -20px rgba(63, 75, 61, 0.6);
+      background: linear-gradient(var(--rose-clair), var(--abricot) 45%, var(--beurre) 62%);
+    }
 
-/* Navigation */
-.nav{position:fixed;z-index:5;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px}
-.nav button{width:7px;height:7px;padding:0;border-radius:50%;border:0;background:color-mix(in srgb,var(--sage) 35%,transparent);cursor:pointer;transition:height .35s, background .35s}
-.nav button[aria-current="true"]{height:20px;border-radius:5px;background:var(--sage)}
-#petals{position:fixed;inset:0;z-index:4;pointer-events:none;width:100%;height:100%}
+    .soleil {
+      position: absolute;
+      left: 50%;
+      bottom: 30%;
+      width: 130px;
+      height: 130px;
+      margin-left: -65px;
+      border-radius: 50%;
+      background: var(--papier);
+      opacity: 0.85;
+    }
 
-/* ===== Animations au défilement ===== */
-html.anim [data-a]{opacity:0;transition:opacity .9s ease,transform 1s cubic-bezier(.2,.8,.2,1),clip-path 1.5s cubic-bezier(.6,.1,.3,1);transition-delay:calc(var(--i,0) * 110ms + 120ms)}
-html.anim [data-a="up"]{transform:translateY(24px)}
-html.anim [data-a="ink"]{opacity:1;clip-path:inset(-30% 100% -30% 0)}
-html.anim [data-a="pop"]{transform:scale(.3) rotate(-25deg)}
-html.anim [data-a="photo"]{transform:translateY(40px) rotate(-6deg) scale(.94)}
-html.anim [data-a="grow"]{transform:scale(.4);transition-duration:1.4s,1.6s}
-html.anim [data-a="fade"]{transition-duration:1.6s}
-html.anim .deco.tl[data-a],html.anim .deco.tr[data-a]{transform-origin:top}
-html.anim .on [data-a]{opacity:1;transform:rotate(var(--rest,0deg))}
-html.anim .on [data-a="ink"]{clip-path:inset(-30% -8% -30% 0)}
-html.anim .tl::before{transform:scaleY(0);transition:transform 2.4s cubic-bezier(.5,0,.2,1) .3s}
-html.anim .on .tl::before{transform:scaleY(1)}
-html.anim .seal[data-a]{transform:scale(2.4) rotate(-30deg);transition:opacity .3s ease,transform .6s cubic-bezier(.3,1.6,.5,1)}
-html.anim .on .seal[data-a]{transform:rotate(-8deg)}
+    .mer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 40%;
+      background: linear-gradient(var(--sauge), var(--encre));
+    }
 
-@media (prefers-reduced-motion:reduce){
-  #deck{scroll-behavior:auto}
-  .deco svg,.sun svg,.hint svg{animation:none}
-}
-</style>
+    /* Le petit rond « L&L » en bas à droite de l'illustration */
+    .sceau {
+      position: absolute;
+      right: -12px;
+      bottom: -14px;
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      background: var(--rose);
+      color: #fff;
+      font-family: "Allura", cursive;
+      font-size: 26px;
+      line-height: 66px;
+    }
+  </style>
+</head>
+<body>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <symbol id="leaf" viewBox="0 0 40 80"><path d="M20 78C4 60 2 30 20 2c18 28 16 58 0 76z"/><path d="M20 76V8" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.2"/></symbol>
-    <symbol id="bloom" viewBox="0 0 60 60">
-      <g transform="translate(30 30)">
-        <ellipse rx="10" ry="17" cy="-13"/><ellipse rx="10" ry="17" cy="-13" transform="rotate(72)"/><ellipse rx="10" ry="17" cy="-13" transform="rotate(144)"/><ellipse rx="10" ry="17" cy="-13" transform="rotate(216)"/><ellipse rx="10" ry="17" cy="-13" transform="rotate(288)"/>
-        <circle r="5" fill="#f2c05a"/><circle r="2.2" fill="#c98a3a"/>
-      </g>
-    </symbol>
-    <symbol id="sprig" viewBox="0 0 200 200">
-      <path d="M8 196C50 150 90 100 150 40" fill="none" stroke="#7f9a78" stroke-width="2.4" stroke-linecap="round"/>
-      <use href="#leaf" fill="#8fa886" x="34" y="120" width="26" height="52" transform="rotate(-70 47 146)"/>
-      <use href="#leaf" fill="#a7bb98" x="38" y="128" width="24" height="48" transform="rotate(30 50 152)"/>
-      <use href="#leaf" fill="#7f9a78" x="70" y="80" width="26" height="52" transform="rotate(-60 83 106)"/>
-      <use href="#leaf" fill="#9cb38f" x="76" y="92" width="24" height="48" transform="rotate(40 88 116)"/>
-      <use href="#leaf" fill="#8fa886" x="108" y="42" width="24" height="48" transform="rotate(-50 120 66)"/>
-      <use href="#leaf" fill="#b3c4a2" x="116" y="56" width="22" height="44" transform="rotate(50 127 78)"/>
-      <use href="#leaf" fill="#7f9a78" x="140" y="16" width="20" height="40" transform="rotate(45 150 36)"/>
-    </symbol>
-  </defs>
-</svg>
+  <main class="carte">
+    <h1>L., L. &amp; T.</h1>
+    <p class="petit-titre">vous invitent à célébrer leur mariage</p>
+    <p class="date">5 juin 2027<span>•</span>12h00</p>
+    <p class="petit-titre">La Torre del Sol · Cambrils, Espagne</p>
 
-<!-- Sprig + fleurs, réutilisé dans les coins -->
-<template id="corner">
-  <svg viewBox="0 0 200 200" aria-hidden="true">
-    <use href="#sprig"/>
-    <use href="#bloom" fill="#f2b3bd" x="14" y="120" width="54" height="54"/>
-    <use href="#bloom" fill="#f6c99a" x="58" y="148" width="40" height="40"/>
-    <use href="#bloom" fill="#f5d888" x="2" y="166" width="30" height="30"/>
-  </svg>
-</template>
+    <p class="manuscrit">
+      Les pieds dans le sable, le soleil au-dessus de nous et les personnes que nous aimons autour de nous…
+      <span class="coeur">♥</span>
+    </p>
 
-<canvas id="petals" aria-hidden="true"></canvas>
-<nav class="nav" id="nav" aria-label="Pages de l'invitation"></nav>
-
-<main id="deck">
-
-<!-- 1. Couverture -->
-<section class="slide cover" id="accueil" aria-label="Invitation">
-  <div class="deco tr" data-a="grow"></div><div class="deco bl" data-a="grow"></div>
-  <div class="inner">
-    <h1 class="names" data-a="ink">L., L. &amp; T.</h1>
-    <p class="eyebrow" data-a="up">vous invitent à célébrer leur mariage</p>
-    <div class="date" data-a="up">5 juin 2027<i></i>12h00</div>
-    <p class="eyebrow" data-a="up">La Torre del Sol · Cambrils, Espagne</p>
-    <p class="hand" data-a="up">Les pieds dans le sable, le soleil au-dessus de nous et les personnes que nous aimons autour de nous… <span class="heart-sm">♥</span></p>
-    <div class="photo-wrap">
-      <div class="archbox"><div class="archbox"><div class="arch" data-a="photo"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjQ4IDk4NCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iYyIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2YyYjNiZCIvPjxzdG9wIG9mZnNldD0iLjQ1IiBzdG9wLWNvbG9yPSIjZjFhMjZhIi8+PHN0b3Agb2Zmc2V0PSIuNjIiIHN0b3AtY29sb3I9IiNmNWQ4ODgiLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0ibSIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzg2YTA3ZiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzNmNGIzZCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMjQ4IiBoZWlnaHQ9Ijk4NCIgZmlsbD0idXJsKCNjKSIvPjxjaXJjbGUgY3g9IjYyNCIgY3k9IjU2MCIgcj0iMTUwIiBmaWxsPSIjZjdmMGUzIiBvcGFjaXR5PSIuODUiLz48cmVjdCB5PSI2MDAiIHdpZHRoPSIxMjQ4IiBoZWlnaHQ9IjM4NCIgZmlsbD0idXJsKCNtKSIvPjxnIGZpbGw9IiNmN2YwZTMiIG9wYWNpdHk9Ii4zNSI+PHJlY3QgeD0iMzgwIiB5PSI2NTAiIHdpZHRoPSI0ODgiIGhlaWdodD0iOCIgcng9IjQiLz48cmVjdCB4PSI0NjAiIHk9IjcwMCIgd2lkdGg9IjMyOCIgaGVpZ2h0PSI4IiByeD0iNCIvPjxyZWN0IHg9IjU0MCIgeT0iNzUwIiB3aWR0aD0iMTY4IiBoZWlnaHQ9IjgiIHJ4PSI0Ii8+PC9nPjwvc3ZnPgo=" alt="Illustration : coucher de soleil sur la mer"></div>
-      <div class="seal" data-a="pop" aria-hidden="true">L&amp;L</div></div></div>
+    <div class="cadre">
+      <div class="illustration" role="img" aria-label="Illustration : coucher de soleil sur la mer">
+        <div class="soleil"></div>
+        <div class="mer"></div>
+      </div>
+      <div class="sceau" aria-hidden="true">L&amp;L</div>
     </div>
-    <p data-a="up">Sans vraiment nous en rendre compte, les jours sont devenus des mois, les mois des années… et voilà bientôt 10 ans que nous avançons ensemble.</p>
-  </div>
-</section>
 
-</main>
+    <p>Sans vraiment nous en rendre compte, les jours sont devenus des mois, les mois des années… et voilà bientôt 10 ans que nous avançons ensemble.</p>
+  </main>
 
-<script>
-(function(){
-  const deck = document.getElementById('deck');
-  const slides = [...document.querySelectorAll('.slide')];
-  const tpl = document.getElementById('corner');
-  document.querySelectorAll('.deco').forEach(d => {
-    const svg = tpl.content.firstElementChild.cloneNode(true);
-    if (d.classList.contains('tr')) d.style.scale = '-1 -1';
-    if (d.classList.contains('tl')) d.style.scale = '1 -1';
-    if (d.classList.contains('br')) d.style.scale = '-1 1';
-    d.appendChild(svg);
-  });
-
-  // Ordre d'apparition : chaque élément animé reçoit un rang dans sa carte
-  slides.forEach(s => s.querySelectorAll('[data-a]').forEach((el, i) => {
-    if (!el.classList.contains('deco')) el.style.setProperty('--i', i);
-    else el.style.setProperty('--i', 0);
-  }));
-
-  // Navigation par points
-  const nav = document.getElementById('nav');
-  const dots = slides.map((s, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.setAttribute('aria-label', s.getAttribute('aria-label') || 'Page ' + (i+1));
-    b.addEventListener('click', () => s.scrollIntoView({behavior: reduce ? 'auto' : 'smooth'}));
-    nav.appendChild(b); return b;
-  });
-
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const setActive = i => dots.forEach((d, j) => d.setAttribute('aria-current', i === j));
-  setActive(0);
-
-  if ('IntersectionObserver' in window && !reduce) {
-    document.documentElement.classList.add('anim');
-    requestAnimationFrame(() => requestAnimationFrame(() => slides[0].classList.add('on')));
-    const io = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        const i = slides.indexOf(e.target);
-        if (e.intersectionRatio >= 0.45) {
-          e.target.classList.add('on'); setActive(i);
-          if (e.target.id === 'merci') petals(70);
-        } else if (e.intersectionRatio < 0.02) {
-          e.target.classList.remove('on');
-        }
-      });
-    }, {root: deck, threshold: [0, 0.02, 0.45]});
-    slides.forEach(s => io.observe(s));
-  } else {
-    slides.forEach(s => s.classList.add('on'));
-    const io2 = 'IntersectionObserver' in window && new IntersectionObserver(es => es.forEach(e => {
-      if (e.isIntersecting) setActive(slides.indexOf(e.target));
-    }), {root: deck, threshold: 0.5});
-    io2 && slides.forEach(s => io2.observe(s));
-  }
-
-  // Pétales
-  const cv = document.getElementById('petals'), ctx = cv.getContext('2d');
-  const colors = ['#f2b3bd','#f5d888','#f1a26a','#a7bb98','#f7c9cf'];
-  let parts = [], running = false;
-  function size(){ cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio; }
-  size(); addEventListener('resize', size);
-  function petals(n, fromY){
-    if (reduce) return;
-    const W = innerWidth;
-    for (let k = 0; k < n; k++) parts.push({
-      x: Math.random() * W, y: fromY != null ? fromY : -20 - Math.random() * innerHeight * .6,
-      vx: (Math.random() - .5) * (fromY != null ? 6 : 1), vy: fromY != null ? -4 - Math.random() * 5 : 1 + Math.random() * 1.5,
-      r: 5 + Math.random() * 6, a: Math.random() * 6.28, va: (Math.random() - .5) * .12,
-      c: colors[k % colors.length], life: 0
-    });
-    if (!running) { running = true; requestAnimationFrame(step); }
-  }
-  function step(){
-    const dpr = devicePixelRatio;
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    parts.forEach(p => {
-      p.life++; p.vy += .05; if (p.vy > 2.2) p.vy = 2.2;
-      p.vx *= .99; p.x += p.vx + Math.sin(p.life / 20) * .6; p.y += p.vy; p.a += p.va;
-      ctx.save(); ctx.translate(p.x * dpr, p.y * dpr); ctx.rotate(p.a); ctx.scale(dpr, dpr * (.5 + .5 * Math.abs(Math.sin(p.life / 15))));
-      ctx.fillStyle = p.c; ctx.globalAlpha = .9;
-      ctx.beginPath(); ctx.ellipse(0, 0, p.r, p.r * .6, 0, 0, 6.283); ctx.fill(); ctx.restore();
-    });
-    parts = parts.filter(p => p.y < innerHeight + 30);
-    if (parts.length) requestAnimationFrame(step); else { running = false; ctx.clearRect(0,0,cv.width,cv.height); }
-  }
-
-})();
-</script>
+</body>
+</html>
