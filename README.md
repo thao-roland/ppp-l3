@@ -7,7 +7,7 @@ Dépôt de mon **PPP de L3** (projet personnel et professionnel). Il regroupe le
 | Dossier | Description |
 | --- | --- |
 | [`prospection/`](prospection/) | Outil de suivi de ma prospection freelance, **pas encore réalisé** (prévu pour le rapport de décembre 2026), et emplacement des futurs exports CSV anonymisés dans [`prospection/donnees/`](prospection/donnees/). Aucune donnée pour l'instant. |
-| [`site/`](site/) | Les sites web que je réalise, un sous-dossier par site. Aucun site pour l'instant. |
+| [`site/`](site/) | Les sites web que je réalise, un sous-dossier par site. Premier site en cours : [`site/mariage/`](site/mariage/). |
 
 ## Confidentialité
 

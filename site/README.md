@@ -6,4 +6,8 @@ Chaque site aura son propre sous-dossier, avec son propre `README.md` qui le pr�
 
 Avant d'ajouter un site ici, je retire tout ce qui ne doit pas être public : photos de personnes, données personnelles, liens privés et secrets.
 
-> **Statut : aucun site pour l'instant.**
+## Sites
+
+| Dossier | Description |
+| --- | --- |
+| [`mariage/`](mariage/) | Page web pour un client qui va se marier (en cours). |
