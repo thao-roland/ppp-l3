@@ -11,4 +11,8 @@ Page web pour un client qui va se marier.
 
 Le site avance petit à petit. J'ajoute et je modifie les cartes au fur et à mesure que le client me dit ce qu'il veut changer ou ajouter.
 
+## Confidentialité
+
+Les noms, la date, le lieu et l'illustration de cette version publique sont **fictifs** ou modifiés, pour protéger la vie privée du client.
+
 > **Statut : en cours.**
