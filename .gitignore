@@ -18,3 +18,15 @@ exports_prives/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Outil de prospection : base locale, exports Facebook (noms + messages), imports bruts
+prospection/data/
+prospection/exports_facebook/
+prospection/imports/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/

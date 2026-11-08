@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Prospects ({{ prospects|length }})</h1>
+
+{% if not prospects %}
+  <p>Aucun prospect pour l'instant. <a href="{{ url_for('nouveau') }}">Ajouter le premier</a>.</p>
+{% else %}
+<table>
+  <thead>
+    <tr>
+      <th>Code</th><th>Entreprise</th><th>Métier</th><th>Ville</th><th>Canal</th>
+      <th>1er message</th><th>Msg</th><th>Réponse</th><th>Intérêt</th><th>Statut</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for p in prospects %}
+    <tr>
+      <td>{{ p.code }}</td>
+      <td>{{ p.nom_entreprise }}</td>
+      <td>{{ p.metier or "" }}</td>
+      <td>{{ p.ville or "" }}</td>
+      <td>{{ p.canal or "" }}</td>
+      <td>{{ p.date_premier_message or "" }}</td>
+      <td>{{ p.version_message or "" }}</td>
+      <td>{{ p.date_reponse or "" }}</td>
+      <td>{{ p.interet }}</td>
+      <td>{{ p.statut }}</td>
+      <td><a href="{{ url_for('modifier', code=p.code) }}">Modifier</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

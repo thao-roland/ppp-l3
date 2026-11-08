@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{# Petit modèle réutilisé pour afficher le message d'erreur d'un champ #}
+{% macro erreur(nom, liste=erreurs) %}
+  {% if liste.get(nom) %}<span class="erreur">{{ liste[nom] }}</span>{% endif %}
+{% endmacro %}
+
+{% block titre %}{{ "Modifier " ~ prospect.code if prospect else "Nouveau prospect" }}{% endblock %}
+
+{% block contenu %}
+<h1>{{ "Modifier " ~ prospect.code if prospect else "Nouveau prospect" }}</h1>
+
+{% if erreurs %}<p class="erreur">Le formulaire contient des erreurs, rien n'a été enregistré.</p>{% endif %}
+
+<form method="post">
+  <label>Nom de l'entreprise *
+    <input name="nom_entreprise" value="{{ valeurs.nom_entreprise or '' }}" required>
+    {{ erreur("nom_entreprise") }}
+  </label>
+
+  <div class="ligne">
+    <label>Métier <input name="metier" value="{{ valeurs.metier or '' }}"></label>
+    <label>Ville <input name="ville" value="{{ valeurs.ville or '' }}"></label>
+  </div>
+
+  <div class="ligne">
+    <label>Canal
+      <select name="canal">
+        <option value="">—</option>
+        {% for c in canaux %}<option {{ "selected" if valeurs.canal == c }}>{{ c }}</option>{% endfor %}
+      </select>
+      {{ erreur("canal") }}
+    </label>
+    <label>Version du message
+      <select name="version_message">
+        <option value="">—</option>
+        {% for v in versions %}<option {{ "selected" if valeurs.version_message == v }}>{{ v }}</option>{% endfor %}
+      </select>
+      {{ erreur("version_message") }}
+    </label>
+    <label>A déjà un site
+      <select name="a_deja_site">
+        <option value="">Inconnu</option>
+        <option value="oui" {{ "selected" if valeurs.a_deja_site == 1 }}>Oui</option>
+        <option value="non" {{ "selected" if valeurs.a_deja_site == 0 }}>Non</option>
+      </select>
+      {{ erreur("a_deja_site") }}
+    </label>
+  </div>
+
+  <div class="ligne">
+    <label>Date du 1er message
+      <input type="date" name="date_premier_message" value="{{ valeurs.date_premier_message or '' }}">
+      {{ erreur("date_premier_message") }}
+    </label>
+    <label>Date de la réponse
+      <input type="date" name="date_reponse" value="{{ valeurs.date_reponse or '' }}">
+      {{ erreur("date_reponse") }}
+    </label>
+    <label class="case">
+      <input type="checkbox" name="dates_estimees" value="1" {{ "checked" if valeurs.dates_estimees }}>
+      Dates estimées (de mémoire)
+    </label>
+  </div>
+
+  <label>Texte envoyé
+    <textarea name="texte_envoye" rows="5">{{ valeurs.texte_envoye or '' }}</textarea>
+  </label>
+
+  <div class="ligne">
+    <label>Intérêt
+      <select name="interet">
+        {% for i in interets %}<option {{ "selected" if valeurs.interet == i }}>{{ i }}</option>{% endfor %}
+      </select>
+      {{ erreur("interet") }}
+    </label>
+    <label>Statut
+      <select name="statut">
+        {% for s in statuts %}<option {{ "selected" if valeurs.statut == s }}>{{ s }}</option>{% endfor %}
+      </select>
+      {{ erreur("statut") }}
+    </label>
+    <label>Tarif proposé (€)
+      <input name="tarif_propose" inputmode="numeric" value="{{ valeurs.tarif_propose if valeurs.tarif_propose is not none else '' }}">
+      {{ erreur("tarif_propose") }}
+    </label>
+    <label>Acompte (€)
+      <input name="acompte" inputmode="numeric" value="{{ valeurs.acompte if valeurs.acompte is not none else '' }}">
+      {{ erreur("acompte") }}
+    </label>
+  </div>
+
+  <button type="submit">{{ "Enregistrer" if prospect else "Ajouter" }}</button>
+  <a href="{{ url_for('accueil') }}">Annuler</a>
+</form>
+
+{% if prospect %}
+<h2>Relances ({{ relances|length }})</h2>
+{% if relances %}
+<ul>
+  {% for r in relances %}
+    <li><strong>{{ r.date }}</strong>{% if r.texte %} : {{ r.texte }}{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<form method="post" action="{{ url_for('nouvelle_relance', code=prospect.code) }}" class="relance">
+  <label>Date <input type="date" name="date" required>{{ erreur("date", erreurs_relance) }}</label>
+  <label>Texte <input name="texte"></label>
+  <button type="submit">Ajouter la relance</button>
+</form>
+{% endif %}
+{% endblock %}
