@@ -45,14 +45,27 @@ def reparer(valeur):
 
 
 # --- Trouver et lire les conversations ---------------------------------------
+def _dossiers_de_type(racine, type_dossier):
+    """Dossiers « inbox » (ou autre type) d'un export.
+
+    Trouve …/messages/inbox à n'importe quelle profondeur (ancienne ou nouvelle
+    présentation), mais aussi inbox/ directement dans le dossier donné quand on
+    a copié seulement le dossier « messages » de l'export.
+    """
+    racine = Path(racine)
+    candidats = [racine / type_dossier] + sorted(racine.glob(f"**/messages/{type_dossier}"))
+    return [c for c in candidats if c.is_dir() and not c.is_symlink()]
+
+
 def trouver_conversations(racine):
-    """Liste les dossiers de conversations d'un export (ancienne ou nouvelle présentation)."""
-    trouves = []
+    """Liste les dossiers de conversations d'un export."""
+    trouves, deja_vus = [], set()
     for type_dossier in TYPES_DOSSIERS:
-        for parent in sorted(Path(racine).glob(f"**/messages/{type_dossier}")):
-            if parent.is_dir() and not parent.is_symlink():
-                trouves += [d for d in sorted(parent.iterdir())
-                            if d.is_dir() and not d.is_symlink()]
+        for parent in _dossiers_de_type(racine, type_dossier):
+            for d in sorted(parent.iterdir()):
+                if d.is_dir() and not d.is_symlink() and d.resolve() not in deja_vus:
+                    deja_vus.add(d.resolve())
+                    trouves.append(d)
     return trouves
 
 

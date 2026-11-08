@@ -61,7 +61,16 @@ Lancer les tests : `python -m pytest` (dans le dossier `prospection/`).
 2. Dézipper l'export dans `crm-donnees/exports_facebook/` (un dossier par export).
 3. Dans l'outil, cliquer sur **« Importer un export Facebook »**, choisir l'export, puis **Importer**.
 
-Pas de scraping : on lit seulement les fichiers de l'export, sur mon ordinateur.
+Pas de scraping : on lit seulement les fichiers de l'export, sur mon ordinateur. On peut aussi y déposer seulement le dossier `messages` de l'export (avec `inbox/` dedans) : il est reconnu.
+
+**En ligne de commande**, avec des résultats qui ne montrent que des nombres (jamais de noms ni de messages) :
+
+```bash
+python importer_cli.py --simuler   # compte tout, sans rien enregistrer
+python importer_cli.py             # importe pour de bon
+```
+
+Options : `--export NOM` (si plusieurs exports sont dans `exports_facebook/`) et `--mon-nom "Prénom Nom"` (si mon nom n'est pas deviné).
 
 **Règles de l'import** (une conversation entre deux personnes = un prospect) :
 
@@ -140,6 +149,7 @@ prospection/
 ├── facebook.py       lecture de l'export Facebook et règles de transformation
 ├── importation.py    enregistrement de l'import dans la base
 ├── pages_import.py   page « Importer un export Facebook »
+├── importer_cli.py   import en ligne de commande (nombres seulement)
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS

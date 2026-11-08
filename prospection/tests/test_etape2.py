@@ -291,3 +291,77 @@ def test_le_faux_export_ne_contient_que_des_noms_inventes():
         noms = {p["name"] for p in donnees["participants"]}
         noms |= {m["sender_name"] for m in donnees["messages"]}
         assert noms <= autorises, f"nom non prévu dans {fichier.name}"
+
+
+# --- Export dont on n'a copié que le dossier « messages » --------------------
+def test_dossier_messages_donne_directement(tmp_path):
+    """exports_facebook/messages contient inbox/ directement (pas de messages/ dedans)."""
+    shutil.copytree(FAUX_EXPORT / "messages", tmp_path / "messages")
+    assert len(facebook.trouver_conversations(tmp_path / "messages")) == 7
+
+
+def test_import_d_un_dossier_messages_par_l_interface(client, conn, dossier_donnees):
+    shutil.copytree(FAUX_EXPORT / "messages", dossier_donnees / "exports_facebook" / "messages")
+    reponse = client.post("/import", data={"export": "messages"})
+    assert reponse.status_code == 200
+    assert conn.execute("SELECT COUNT(*) FROM prospects").fetchone()[0] == 5
+
+
+def test_une_conversation_n_est_pas_comptee_deux_fois(tmp_path):
+    shutil.copytree(FAUX_EXPORT / "messages", tmp_path / "messages")
+    shutil.copytree(FAUX_EXPORT / "messages", tmp_path / "copie" / "messages")
+    assert len(facebook.trouver_conversations(tmp_path / "messages")) == 7
+
+
+# --- Compteurs et simulation -------------------------------------------------
+def test_rapport_compte_relances_et_reponses(client, conn):
+    rapport = importation.importer(conn, FAUX_EXPORT)
+    assert rapport["relances"] == 2 and rapport["reponses"] == 2
+
+
+def test_simulation_ne_marque_rien_en_base(client, conn):
+    rapport = importation.importer(conn, FAUX_EXPORT, simuler=True)
+    assert len(rapport["nouveaux"]) == 5 and rapport["simulation"] is True
+    assert conn.execute("SELECT COUNT(*) FROM prospects").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM relances").fetchone()[0] == 0
+
+
+# --- Commande importer_cli.py : seulement des nombres ------------------------
+@pytest.fixture
+def cli(monkeypatch, tmp_path, dossier_donnees):
+    """Prépare importer_cli sur un dossier temporaire (jamais la vraie base)."""
+    import importer_cli
+    monkeypatch.setenv("CRM_DONNEES", str(dossier_donnees))
+    monkeypatch.setattr(db, "ANCIENNE_BASE", tmp_path / "n_existe_pas.db")
+    shutil.copytree(FAUX_EXPORT / "messages", dossier_donnees / "exports_facebook" / "messages")
+    return importer_cli
+
+
+def test_cli_affiche_des_nombres_sans_aucun_nom(cli, capsys):
+    assert cli.main(["--simuler"]) == 0
+    sortie = capsys.readouterr().out
+    assert "SIMULATION" in sortie and "Prospects créés             : 5" in sortie
+    assert "Relances créées             : 2" in sortie
+    for nom in ("Fictive", "Imaginaire", "Inventée", "Fictif", "Utilisateur", "Bonjour"):
+        assert nom not in sortie
+
+
+def test_cli_importe_pour_de_bon_puis_ne_recree_rien(cli, capsys, dossier_donnees):
+    assert cli.main([]) == 0
+    capsys.readouterr()
+    assert cli.main([]) == 0
+    assert "déjà importées            : 5" in capsys.readouterr().out
+    conn = db.connecter(db.chemin_base(dossier_donnees))
+    assert conn.execute("SELECT COUNT(*) FROM prospects").fetchone()[0] == 5
+    conn.close()
+
+
+def test_cli_erreur_claire_si_export_inconnu(cli, capsys):
+    assert cli.main(["--export", "nexiste_pas"]) == 1
+    assert "Export introuvable" in capsys.readouterr().out
+
+
+def test_cli_demande_de_preciser_si_plusieurs_exports(cli, capsys, dossier_donnees):
+    (dossier_donnees / "exports_facebook" / "autre").mkdir()
+    assert cli.main([]) == 1
+    assert "précise --export" in capsys.readouterr().out

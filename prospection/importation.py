@@ -57,9 +57,10 @@ def _enregistrer(conn, prospect):
     return code
 
 
-def importer(conn, dossier_export, mon_nom=None):
+def importer(conn, dossier_export, mon_nom=None, simuler=False):
     """Importe un export. Tout est enregistré d'un coup, ou rien en cas d'erreur.
 
+    simuler=True : fait tous les calculs mais n'enregistre rien (pour voir les nombres).
     Renvoie un rapport (des nombres et des codes P00X, jamais de noms).
     """
     dossiers = facebook.trouver_conversations(dossier_export)
@@ -70,7 +71,8 @@ def importer(conn, dossier_export, mon_nom=None):
     nom = _choisir_mon_nom(conversations, mon_nom)
 
     rapport = {"conversations": len(dossiers), "nouveaux": [], "deja_importees": 0,
-               "groupes": 0, "sans_message_de_moi": 0, "illisibles": illisibles}
+               "groupes": 0, "sans_message_de_moi": 0, "illisibles": illisibles,
+               "relances": 0, "reponses": 0, "simulation": simuler}
     try:
         for conversation in conversations:
             prospect, raison = facebook.analyser(conversation, nom)
@@ -80,7 +82,9 @@ def importer(conn, dossier_export, mon_nom=None):
                 rapport["deja_importees"] += 1
             else:
                 rapport["nouveaux"].append(_enregistrer(conn, prospect))
-        conn.commit()
+                rapport["relances"] += len(prospect["relances"])
+                rapport["reponses"] += 1 if prospect["date_reponse"] else 0
+        conn.rollback() if simuler else conn.commit()
     except Exception:
         conn.rollback()
         raise
