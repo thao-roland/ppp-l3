@@ -1,6 +1,6 @@
 # prospection
 
-> **Statut : en cours de réalisation, étapes 1 et 2 sur 6 terminées.**
+> **Statut : en cours de réalisation, étapes 1 à 3 sur 6 terminées.**
 
 Petit outil (appli web **en local**) pour suivre ma prospection de sites web auprès de petites entreprises, surtout via Facebook / Messenger, et en sortir de vraies données pour mes rapports de PPP.
 
@@ -12,7 +12,7 @@ Il est fait avec l'aide de **Claude Code**, étape par étape : chaque étape es
 | --- | --- | --- |
 | 1 | Base SQLite + ajout / modification manuelle d'un prospect | ✅ fait |
 | 2 | Import de l'export officiel Facebook (« Télécharger vos informations », JSON) | ✅ fait |
-| 3 | Scoring sur 100 + liste des relances à faire | à faire |
+| 3 | Scoring sur 100 + liste des relances à faire | ✅ fait |
 | 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | à faire |
 | 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | à faire |
 | 6 | Export CSV anonymisé + export Excel avec graphiques | à faire |
@@ -97,6 +97,28 @@ Options : `--export NOM` (si plusieurs exports sont dans `exports_facebook/`) et
 
 Le rapport affiché après l'import ne contient que des nombres et des codes `P00X`, jamais de noms ni de messages.
 
+## Score de priorité et relances à faire (étape 3)
+
+La page d'accueil affiche un **score sur 100** et classe les prospects du plus prioritaire au moins prioritaire. La page **« Relances à faire »** donne la liste de ceux à recontacter. Tous les réglages sont dans [`scoring.toml`](scoring.toml) ; un changement s'applique à la page suivante, sans relancer l'outil.
+
+| Critère | Points |
+| --- | --- |
+| A répondu | +30 |
+| Intérêt : aucun / curieux / demande de prix | 0 / +20 / +40 |
+| Pas de site / inconnu / a déjà un site | +20 / +10 / 0 |
+| Dernier échange il y a moins de 14 jours | +10 |
+| Chaque relance restée sans réponse | −5 |
+
+- Le score reste entre 0 et 100. Un prospect **signé ou perdu** n'a pas de score (« — ») et n'est jamais à relancer.
+- Une relance est « sans réponse » s'il n'y a aucune réponse, ou si elle est **postérieure** à la réponse. Une relance du même jour que la réponse compte comme ayant reçu une réponse, car on ne connaît que les dates, pas les heures.
+- **À relancer** : mon dernier message date d'au moins **7 jours**, personne n'y a répondu, et il y a moins de **2 relances** sans réponse. La liste va du meilleur score au moins bon, puis de l'attente la plus longue à la plus courte.
+
+**Limites à garder en tête :**
+
+- L'import n'enregistre que la **première** réponse. Le « dernier échange » ne voit donc pas la suite d'une conversation.
+- Un prospect importé n'a pas d'intérêt renseigné, et son site est « inconnu ». Tant que je ne les complète pas, le score ne distingue presque que « a répondu » ou non, et la date.
+- Avec `DELAI_MIN_RELANCE_HEURES = 0` (import), plusieurs messages envoyés d'affilée comptent comme plusieurs relances.
+
 ## Ce que contient un prospect
 
 Code (`P001`, `P002`…), nom d'entreprise, métier, ville, canal, date du 1er message, version du message (A ou B), texte envoyé, réponse (date), intérêt (aucun / curieux / demande de prix), tarif proposé, acompte, statut (contacté / relancé / a répondu / intéressé / signé / perdu), a déjà un site (oui / non / inconnu).
@@ -137,6 +159,12 @@ J'ai ajouté une case **« dates estimées »** : certaines dates de mon début 
 
 **Doublons : un identifiant de conversation + index unique.** La partie numérique du nom de dossier de la conversation est enregistrée dans la base, qui refuse d'en avoir deux identiques. Même si le code de l'import avait un défaut, la base empêcherait le doublon. *Écarté :* comparer les noms ou les dates (deux entreprises peuvent avoir le même nom, et un nom peut changer).
 
+**Règles du score dans un fichier TOML (`scoring.toml`).** Python sait le lire sans rien installer (`tomllib`), et on peut y écrire des commentaires pour expliquer chaque réglage. *Écarté :* JSON (pas de commentaires) ; YAML (une dépendance en plus) ; des constantes dans le code (il faudrait modifier le programme pour changer une règle).
+
+**Le maximum des points est contrôlé.** Si les points modifiés ne totalisent plus 100 au mieux, l'outil affiche un message clair au lieu d'un faux « score sur 100 ». *Écarté :* ramener tous les scores à 100 par un calcul, qui rendrait les points du fichier impossibles à relire.
+
+**Score calculé à l'affichage, pas enregistré.** Il dépend de la date du jour (échange récent) et des règles : un score enregistré serait vite périmé. Pour quelques centaines de prospects, le calcul est immédiat. *Écarté :* une colonne `score` en base, qu'il faudrait recalculer chaque jour et après chaque changement de règle.
+
 **Tests avec pytest.** Chaque test utilise une base temporaire jetable ; je vérifie les ajouts, les modifications, les refus de données incorrectes, la sécurité et l'import. *Écarté :* `unittest`, plus verbeux.
 
 ## Organisation du dossier
@@ -150,6 +178,8 @@ prospection/
 ├── importation.py    enregistrement de l'import dans la base
 ├── pages_import.py   page « Importer un export Facebook »
 ├── importer_cli.py   import en ligne de commande (nombres seulement)
+├── scoring.py        calcul du score et liste des relances à faire
+├── scoring.toml      règles du score et délais (modifiable)
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS

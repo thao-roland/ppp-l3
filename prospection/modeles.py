@@ -172,3 +172,11 @@ def lister_relances(conn, prospect_id):
         "SELECT * FROM relances WHERE prospect_id = ? ORDER BY date, id",
         (prospect_id,),
     ).fetchall()
+
+
+def dates_relances(conn):
+    """Dates des relances de tous les prospects : {id du prospect: [dates]}."""
+    par_prospect = {}
+    for ligne in conn.execute("SELECT prospect_id, date FROM relances ORDER BY date, id"):
+        par_prospect.setdefault(ligne["prospect_id"], []).append(ligne["date"])
+    return par_prospect

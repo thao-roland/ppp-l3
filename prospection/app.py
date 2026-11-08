@@ -11,6 +11,7 @@ from flask import Flask, abort, flash, g, redirect, render_template, request, ur
 import db
 import modeles
 import pages_import
+import scoring
 
 
 def create_app(donnees=None):
@@ -30,6 +31,7 @@ def create_app(donnees=None):
     conn = db.connecter(app.config["CHEMIN_BASE"])
     db.initialiser(conn)
     conn.close()
+    scoring.charger_regles()  # des règles abîmées se voient dès le démarrage
 
     _brancher_base(app)
     _brancher_securite(app)
@@ -81,11 +83,24 @@ def _listes_formulaire():
 
 
 def _brancher_routes(app):
+    def _donnees_scoring():
+        """Prospects, dates des relances et règles (relues à chaque page)."""
+        conn = app.obtenir_conn()
+        return modeles.lister(conn), modeles.dates_relances(conn), scoring.charger_regles()
+
+    @app.errorhandler(scoring.ErreurRegles)
+    def regles_invalides(erreur):
+        return render_template("erreur_regles.html", message=str(erreur)), 500
+
     @app.get("/")
     def accueil():
-        prospects = modeles.lister(app.obtenir_conn())
-        return render_template("liste.html", prospects=prospects)
+        return render_template("liste.html", prospects=scoring.noter(*_donnees_scoring()))
 
+    @app.get("/relances")
+    def relances_a_faire():
+        prospects, relances, regles = _donnees_scoring()
+        return render_template("relances.html", prospects=scoring.a_relancer(prospects, relances, regles),
+                               delai=regles["relances"]["delai_jours"])
 
     @app.route("/prospects/nouveau", methods=["GET", "POST"])
     def nouveau():

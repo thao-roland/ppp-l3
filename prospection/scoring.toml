@@ -1,0 +1,33 @@
+# Règles du score de priorité (sur 100) et de la liste des relances à faire.
+# Ce fichier se modifie à la main : le changement s'applique à la page suivante.
+# Le meilleur score possible doit rester exactement 100 (l'outil le vérifie) :
+#   a_repondu + meilleur intérêt + meilleur cas de site + echange_recent = 100
+
+# Ces prospects n'ont pas de score et ne sont jamais à relancer.
+statuts_hors_score = ["signé", "perdu"]
+
+[points]
+a_repondu = 30
+echange_recent = 10
+# Retiré pour chaque relance restée sans réponse (le score ne descend pas sous 0).
+par_relance_sans_reponse = -5
+
+[points.interet]
+aucun = 0
+curieux = 20
+"demande de prix" = 40
+
+[points.site]
+sans_site = 20
+inconnu = 10
+avec_site = 0
+
+[recence]
+# Un échange est « récent » s'il date de moins de ce nombre de jours.
+jours = 14
+
+[relances]
+# À relancer quand mon dernier message date d'au moins ce nombre de jours.
+delai_jours = 7
+# On arrête de relancer après ce nombre de relances restées sans réponse.
+max_sans_reponse = 2

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titre %}Relances à faire{% endblock %}
+{% block contenu %}
+<h1>Relances à faire ({{ prospects|length }})</h1>
+<p>Sans réponse depuis au moins {{ delai }} jours, du score le plus haut au plus bas.</p>
+
+{% if not prospects %}
+  <p>Aucune relance à faire pour l'instant.</p>
+{% else %}
+<table>
+  <thead>
+    <tr>
+      <th>Code</th><th>Score</th><th>Entreprise</th><th>Canal</th>
+      <th>Sans réponse depuis</th><th>Relances sans réponse</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for p in prospects %}
+    <tr>
+      <td>{{ p.code }}</td>
+      <td>{{ p.score }}</td>
+      <td>{{ p.nom_entreprise }}</td>
+      <td>{{ p.canal or "" }}</td>
+      <td>{{ p.jours_sans_reponse }} j</td>
+      <td>{{ p.nb_relances }}</td>
+      <td><a href="{{ url_for('modifier', code=p.code) }}">Modifier</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
