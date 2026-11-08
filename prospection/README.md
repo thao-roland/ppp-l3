@@ -1,6 +1,6 @@
 # prospection
 
-> **Statut : en cours de réalisation, étapes 1 à 5 sur 6 terminées.**
+> **Statut : les 6 étapes sont réalisées.**
 
 Petit outil (appli web **en local**) pour suivre ma prospection de sites web auprès de petites entreprises, surtout via Facebook / Messenger, et en sortir de vraies données pour mes rapports de PPP.
 
@@ -15,7 +15,7 @@ Il est fait avec l'aide de **Claude Code**, étape par étape : chaque étape es
 | 3 | Scoring sur 100 + liste des relances à faire | ✅ fait |
 | 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | ✅ fait |
 | 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | ✅ fait |
-| 6 | Export CSV anonymisé + export Excel avec graphiques | à faire |
+| 6 | Export CSV anonymisé + export Excel avec graphiques | ✅ fait |
 
 ## Lancer l'outil
 
@@ -156,6 +156,24 @@ Les seuils sont en haut de `analyse.py` (`MIN_CONTACTS_PAR_GROUPE`, `SEUIL_P`). 
 - Toute réponse compte, y compris une réponse automatique d'une Page ou un refus poli.
 - Sans version renseignée dans les fiches, la comparaison A/B reste vide.
 
+## Exports (étape 6)
+
+La page **« Exports »** télécharge deux fichiers pour une période choisie, selon la date du **premier message**. Sans période, tout est exporté ; avec une période, un prospect sans date est écarté. L'outil n'écrit rien dans le dépôt : c'est moi qui dépose le CSV dans `donnees/`, après l'avoir relu.
+
+**CSV anonymisé** : une ligne par prospect, trié par date.
+
+| Colonne | Contenu |
+| --- | --- |
+| `code` | `P001`, `P002`… |
+| `date_premier_message`, `date_reponse` | dates au format AAAA-MM-JJ |
+| `dates_estimees` | `oui` si la date est reconstituée de mémoire |
+| `canal`, `version_message`, `interet`, `statut` | comme dans la fiche |
+| `type_reponse` | `aucune`, `réponse`, `intéressé` ou `signé` (même définition que le tableau de bord) |
+
+Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de message.
+
+**Excel** : des totaux et des graphiques seulement (feuilles Résumé, Semaines, Versions AB, Canaux), aucune ligne par prospect. Il reste hors du dépôt. Si des taux paraissent vides à l'ouverture, cliquer sur « Activer la modification » : Excel doit calculer les formules.
+
 ## Ce que contient un prospect
 
 Code (`P001`, `P002`…), nom d'entreprise, métier, ville, canal, date du 1er message, version du message (A ou B), texte envoyé, réponse (date), intérêt (aucun / curieux / demande de prix), tarif proposé, acompte, statut (contacté / relancé / a répondu / intéressé / signé / perdu), a déjà un site (oui / non / inconnu).
@@ -214,6 +232,16 @@ J'ai ajouté une case **« dates estimées »** : certaines dates de mon début 
 
 **Calculs écrits dans `analyse.py`, avec la bibliothèque standard.** Les deux formules tiennent en quelques lignes, se relisent, et les tests les comparent à des valeurs de référence. *Écarté :* SciPy, une grosse dépendance pour deux calculs.
 
+**CSV construit à partir d'une liste fermée de colonnes.** Une colonne non listée dans `COLONNES_CSV` ne peut pas sortir, même si la base gagne un nouveau champ sensible. *Écarté :* exporter toute la table en retirant les colonnes sensibles, où un oubli suffirait à publier un nom.
+
+**CSV à virgules, en UTF-8.** C'est le format standard, et GitHub l'affiche directement comme un tableau pour mon tuteur. *Écarté :* le point-virgule, plus pratique dans Excel en français, mais moins bien lu ailleurs (et l'export Excel existe pour ça).
+
+**Fichiers téléchargés, pas écrits dans le dépôt.** Un export ne peut pas se retrouver dans `git status` sans geste de ma part. Un test vérifie en plus qu'aucun Excel n'est sous `prospection/` et qu'un CSV n'y est accepté que dans `donnees/`, avec exactement les bonnes colonnes. *Écarté :* une écriture automatique dans `donnees/`, qui publierait sans relecture.
+
+**Excel avec `openpyxl`.** Il crée de vrais graphiques Excel, modifiables, et sait relire le fichier dans les tests. *Écarté :* XlsxWriter (ne sait pas relire, il aurait fallu `openpyxl` en plus pour les tests) ; des images matplotlib collées dans la feuille (non modifiables).
+
+**Taux et intervalles en formules Excel.** On peut cliquer sur une cellule et vérifier le calcul. Les comptages et la valeur *p* de Fisher sont écrits par l'outil : Excel n'a pas de fonction simple pour ce test. *Écarté :* écrire tous les résultats en valeurs figées, impossibles à relire dans le fichier.
+
 **Tests avec pytest.** Chaque test utilise une base temporaire jetable ; je vérifie les ajouts, les modifications, les refus de données incorrectes, la sécurité et l'import. *Écarté :* `unittest`, plus verbeux.
 
 ## Organisation du dossier
@@ -232,6 +260,9 @@ prospection/
 ├── tableau.py        chiffres du tableau de bord (totaux seulement)
 ├── analyse.py        statistiques (intervalle de Wilson, test de Fisher)
 ├── pages_tableau.py  pages « Tableau de bord » et « Analyse »
+├── exports.py        période et CSV anonymisé
+├── exports_excel.py  fichier Excel avec graphiques
+├── pages_exports.py  page « Exports » (téléchargements)
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS
@@ -242,4 +273,4 @@ prospection/
 
 ## Les données publiées : un export CSV anonymisé par période (étape 6)
 
-Les CSV déposés dans [`donnees/`](donnees/) contiendront seulement : code (`P001`…), dates, canal, version du message (A/B), type de réponse, intérêt et statut. **Aucun** nom, nom d'entreprise, e-mail, numéro de téléphone ni texte de message.
+Les CSV déposés dans [`donnees/`](donnees/) contiennent seulement les colonnes décrites dans « Exports (étape 6) ». **Aucun** nom, nom d'entreprise, e-mail, numéro de téléphone ni texte de message.

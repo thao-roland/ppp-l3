@@ -10,8 +10,11 @@ from pathlib import Path
 
 import pytest
 
+from exports import COLONNES_CSV
+
 RACINE = Path(__file__).resolve().parents[2]
 FAUX_EXPORT = "prospection/tests/faux_export_facebook/"
+DOSSIER_CSV = "prospection/donnees/"
 
 # Noms de fichiers ou de dossiers qui n'ont rien à faire dans le dépôt.
 NOMS_INTERDITS = re.compile(
@@ -47,6 +50,21 @@ def test_aucun_fichier_de_donnees_dans_le_depot():
                 if NOMS_INTERDITS.search(f)
                 or (MESSAGE_FACEBOOK.search(f) and not f.startswith(FAUX_EXPORT))]
     assert suspects == [], f"fichiers qui ne doivent pas être commités : {suspects}"
+
+
+def test_exports_seulement_des_csv_anonymises():
+    """Sous prospection/ : pas d'Excel, et un CSV seulement dans donnees/ aux bonnes colonnes."""
+    suspects = []
+    for nom in fichiers_du_depot():
+        if not nom.startswith("prospection/"):
+            continue
+        if nom.endswith(".xlsx"):
+            suspects.append(nom)
+        elif nom.endswith(".csv"):
+            entete = (RACINE / nom).read_text(encoding="utf-8").partition("\n")[0]
+            if not nom.startswith(DOSSIER_CSV) or entete != ",".join(COLONNES_CSV):
+                suspects.append(nom)
+    assert suspects == [], f"exports qui ne doivent pas être commités : {suspects}"
 
 
 def test_aucun_secret_dans_le_depot():

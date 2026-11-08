@@ -25,6 +25,7 @@ crm-donnees/
 exports_facebook/
 prospection/data/
 prospection/imports/
+prospection/**/*.xlsx
 *.zip
 
 # Python

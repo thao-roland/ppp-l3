@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titre %}Exports{% endblock %}
+{% block contenu %}
+<h1>Exports</h1>
+<p class="note">Choisis une période sur la date du premier message. Laisse vide pour tout exporter.</p>
+
+{% if erreur %}<p class="erreur">{{ erreur }}</p>{% endif %}
+
+<form method="get" action="{{ url_for('exports.export_csv') }}">
+  <div class="ligne">
+    <label>Du <input type="date" name="debut" value="{{ debut }}"></label>
+    <label>Au <input type="date" name="fin" value="{{ fin }}"></label>
+  </div>
+  <div class="boutons-export">
+    <button type="submit">CSV anonymisé</button>
+    <button type="submit" formaction="{{ url_for('exports.export_excel') }}">Excel avec graphiques</button>
+  </div>
+</form>
+
+<h2>Ce que contiennent les fichiers</h2>
+<ul class="note">
+  <li><strong>CSV anonymisé</strong> : une ligne par prospect, avec seulement {{ colonnes|join(", ") }}. Aucun nom, aucun texte de message.</li>
+  <li><strong>Excel</strong> : des totaux et des graphiques (résumé, semaines, versions A/B, canaux). Aucune ligne par prospect.</li>
+  <li>Seul un CSV anonymisé vérifié peut être déposé dans <code>prospection/donnees/</code>.</li>
+</ul>
+{% endblock %}
