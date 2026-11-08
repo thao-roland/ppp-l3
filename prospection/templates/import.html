@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titre %}Importer un export Facebook{% endblock %}
+
+{% block contenu %}
+<h1>Importer un export Facebook</h1>
+
+<p>Export officiel (« Télécharger vos informations », format JSON, messages).
+Dézippe-le dans le dossier <code>exports_facebook</code> de ton dossier de données
+(<code>crm-donnees</code>, hors du dépôt), puis choisis-le ici.</p>
+
+{% if erreur %}<p class="erreur">{{ erreur }}</p>{% endif %}
+
+{% if rapport %}
+  <div class="message">
+    <p><strong>{{ rapport.nouveaux|length }}</strong> nouveau(x) prospect(s) importé(s)
+      sur {{ rapport.conversations }} conversation(s).</p>
+    {% if rapport.nouveaux %}<p>Codes créés : {{ rapport.nouveaux|join(", ") }}</p>{% endif %}
+    <ul>
+      <li>Déjà importées avant : {{ rapport.deja_importees }}</li>
+      <li>Ignorées (conversations de groupe) : {{ rapport.groupes }}</li>
+      <li>Ignorées (je n'y ai écrit aucun message) : {{ rapport.sans_message_de_moi }}</li>
+      <li>Illisibles : {{ rapport.illisibles }}</li>
+    </ul>
+  </div>
+{% endif %}
+
+{% if exports %}
+<form method="post">
+  <label>Export à importer
+    <select name="export">
+      {% for e in exports %}<option>{{ e }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Mon nom Facebook (laisse vide : je le devine)
+    <input name="mon_nom" autocomplete="off">
+  </label>
+  <button type="submit">Importer</button>
+</form>
+{% else %}
+  <p>Aucun export trouvé dans <code>crm-donnees/exports_facebook</code>.</p>
+{% endif %}
+{% endblock %}

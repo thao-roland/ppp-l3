@@ -1,0 +1,22 @@
+{
+  "participants": [
+    {
+      "name": "Pizzeria Fictive M\u00c3\u00a9lanie"
+    },
+    {
+      "name": "Utilisateur Test"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Utilisateur Test",
+      "timestamp_ms": 1791543600000,
+      "content": "Bonjour, je propose la cr\u00c3\u00a9ation de sites web.",
+      "is_geoblocked_for_viewer": false
+    }
+  ],
+  "title": "Pizzeria Fictive M\u00c3\u00a9lanie",
+  "is_still_participant": true,
+  "thread_path": "message_requests/pizzeriafictivemelanie_1000000007",
+  "magic_words": []
+}

@@ -1,0 +1,22 @@
+{
+  "participants": [
+    {
+      "name": "Coiffure Invent\u00c3\u00a9e Chlo\u00c3\u00a9"
+    },
+    {
+      "name": "Utilisateur Test"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Utilisateur Test",
+      "timestamp_ms": 1791412200000,
+      "content": "Bonjour, avez-vous d\u00c3\u00a9j\u00c3\u00a0 un site internet ?",
+      "is_geoblocked_for_viewer": false
+    }
+  ],
+  "title": "Coiffure Invent\u00c3\u00a9e Chlo\u00c3\u00a9",
+  "is_still_participant": true,
+  "thread_path": "inbox/coiffureinventeechloe_1000000003",
+  "magic_words": []
+}

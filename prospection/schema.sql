@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS prospects (
     statut                TEXT NOT NULL DEFAULT 'contacté',
     a_deja_site           INTEGER,                   -- 1 = oui, 0 = non, vide = inconnu
     dates_estimees        INTEGER NOT NULL DEFAULT 0, -- 1 = dates reconstituées de mémoire
-    cree_le               TEXT NOT NULL DEFAULT (datetime('now'))
+    conversation_fb       TEXT,                      -- identifiant de la conversation Facebook importée
+    cree_le              TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Une ligne par relance (un prospect peut en avoir plusieurs).

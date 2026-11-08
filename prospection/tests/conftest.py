@@ -1,26 +1,32 @@
 """Outils communs aux tests : une base temporaire jetable pour chaque test."""
 
+from pathlib import Path
+
 import pytest
 
 import db
 from app import create_app
 
 
-@pytest.fixture
-def chemin_base(tmp_path):
-    return tmp_path / "test.db"
+FAUX_EXPORT = Path(__file__).parent / "faux_export_facebook"
 
 
 @pytest.fixture
-def client(chemin_base):
+def dossier_donnees(tmp_path):
+    """Faux dossier de données : temporaire, donc jamais dans le dépôt."""
+    return tmp_path / "crm-donnees"
+
+
+@pytest.fixture
+def client(dossier_donnees):
     """Navigateur de test branché sur une base vide."""
-    return create_app(chemin_base).test_client()
+    return create_app(dossier_donnees).test_client()
 
 
 @pytest.fixture
-def conn(chemin_base, client):
+def conn(dossier_donnees, client):
     """Connexion directe à la même base, pour vérifier ce qui est enregistré."""
-    connexion = db.connecter(chemin_base)
+    connexion = db.connecter(db.chemin_base(dossier_donnees))
     yield connexion
     connexion.close()
 

@@ -10,22 +10,31 @@ from flask import Flask, abort, flash, g, redirect, render_template, request, ur
 
 import db
 import modeles
+import pages_import
 
 
-def create_app(chemin_base=None):
-    """Fabrique l'application (le chemin de la base peut être imposé pour les tests)."""
+def create_app(donnees=None):
+    """Fabrique l'application.
+
+    `donnees` = dossier des données réelles (hors dépôt). Par défaut il est lu
+    dans CRM_DONNEES ; les tests passent un dossier temporaire.
+    """
     app = Flask(__name__)
     # Clé aléatoire à chaque démarrage : sert seulement aux messages « enregistré ».
     app.secret_key = secrets.token_hex(16)
-    app.config["CHEMIN_BASE"] = chemin_base
 
-    with db.connecter(chemin_base) as conn:
-        db.initialiser(conn)
+    dossier = db.preparer_dossier(db.dossier_donnees(donnees))
+    app.config["DOSSIER_DONNEES"] = dossier
+    app.config["CHEMIN_BASE"] = db.chemin_base(dossier)
+
+    conn = db.connecter(app.config["CHEMIN_BASE"])
+    db.initialiser(conn)
     conn.close()
 
     _brancher_base(app)
     _brancher_securite(app)
     _brancher_routes(app)
+    app.register_blueprint(pages_import.bp)
     return app
 
 
@@ -76,6 +85,7 @@ def _brancher_routes(app):
     def accueil():
         prospects = modeles.lister(app.obtenir_conn())
         return render_template("liste.html", prospects=prospects)
+
 
     @app.route("/prospects/nouveau", methods=["GET", "POST"])
     def nouveau():
@@ -128,6 +138,14 @@ def _brancher_routes(app):
         return page, 400
 
 
-if __name__ == "__main__":
+def lancer():
+    """Démarrage réel : récupère l'ancienne base de l'étape 1, puis lance le serveur."""
+    dossier = db.preparer_dossier(db.dossier_donnees())
+    if db.migrer_ancienne_base(db.ANCIENNE_BASE, dossier):
+        print("Ancienne base déplacée vers le dossier de données (hors dépôt).")
     # 127.0.0.1 = accessible seulement depuis cet ordinateur. Pas de mode debug.
-    create_app().run(host="127.0.0.1", port=5000)
+    create_app(dossier).run(host="127.0.0.1", port=5000)
+
+
+if __name__ == "__main__":
+    lancer()

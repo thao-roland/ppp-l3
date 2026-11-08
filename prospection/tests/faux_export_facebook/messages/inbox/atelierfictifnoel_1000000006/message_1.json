@@ -1,0 +1,34 @@
+{
+  "participants": [
+    {
+      "name": "Atelier Fictif No\u00c3\u00abl"
+    },
+    {
+      "name": "Utilisateur Test"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Atelier Fictif No\u00c3\u00abl",
+      "timestamp_ms": 1791018000000,
+      "content": "Super, merci.",
+      "is_geoblocked_for_viewer": false
+    },
+    {
+      "sender_name": "Utilisateur Test",
+      "timestamp_ms": 1790931600000,
+      "content": "Oui, bien s\u00c3\u00bbr, que souhaitez-vous ?",
+      "is_geoblocked_for_viewer": false
+    },
+    {
+      "sender_name": "Atelier Fictif No\u00c3\u00abl",
+      "timestamp_ms": 1790589600000,
+      "content": "Bonjour, vous faites des sites ?",
+      "is_geoblocked_for_viewer": false
+    }
+  ],
+  "title": "Atelier Fictif No\u00c3\u00abl",
+  "is_still_participant": true,
+  "thread_path": "inbox/atelierfictifnoel_1000000006",
+  "magic_words": []
+}

@@ -1,0 +1,22 @@
+{
+  "participants": [
+    {
+      "name": "Boulangerie Fictive \u00c3\u0089toile"
+    },
+    {
+      "name": "Utilisateur Test"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Utilisateur Test",
+      "timestamp_ms": 1790846100000,
+      "content": "Bonjour, je cr\u00c3\u00a9e des sites web pour les commer\u00c3\u00a7ants de la r\u00c3\u00a9gion. Seriez-vous int\u00c3\u00a9ress\u00c3\u00a9 ?",
+      "is_geoblocked_for_viewer": false
+    }
+  ],
+  "title": "Boulangerie Fictive \u00c3\u0089toile",
+  "is_still_participant": true,
+  "thread_path": "inbox/boulangeriefictiveetoile_1000000001",
+  "magic_words": []
+}

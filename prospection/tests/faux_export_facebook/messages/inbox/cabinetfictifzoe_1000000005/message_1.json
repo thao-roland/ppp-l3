@@ -1,0 +1,22 @@
+{
+  "participants": [
+    {
+      "name": "Cabinet Fictif Zo\u00c3\u00a9"
+    },
+    {
+      "name": "Utilisateur Test"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Cabinet Fictif Zo\u00c3\u00a9",
+      "timestamp_ms": 1791018000000,
+      "content": "Bonjour, \u00c3\u00aates-vous disponible ?",
+      "is_geoblocked_for_viewer": false
+    }
+  ],
+  "title": "Cabinet Fictif Zo\u00c3\u00a9",
+  "is_still_participant": true,
+  "thread_path": "inbox/cabinetfictifzoe_1000000005",
+  "magic_words": []
+}

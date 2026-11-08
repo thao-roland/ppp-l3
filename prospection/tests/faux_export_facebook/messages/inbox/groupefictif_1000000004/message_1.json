@@ -1,0 +1,25 @@
+{
+  "participants": [
+    {
+      "name": "Fictif Alpha"
+    },
+    {
+      "name": "Fictif B\u00c3\u00aata"
+    },
+    {
+      "name": "Utilisateur Test"
+    }
+  ],
+  "messages": [
+    {
+      "sender_name": "Utilisateur Test",
+      "timestamp_ms": 1791104400000,
+      "content": "Bonjour \u00c3\u00a0 tous.",
+      "is_geoblocked_for_viewer": false
+    }
+  ],
+  "title": "Fictif Alpha",
+  "is_still_participant": true,
+  "thread_path": "inbox/groupefictif_1000000004",
+  "magic_words": []
+}

@@ -109,16 +109,20 @@ def prochain_code(conn):
     return f"P{(ligne['dernier'] or 0) + 1:03d}"
 
 
-def creer(conn, valeurs):
-    """Ajoute un prospect et renvoie son code."""
+def creer(conn, valeurs, conversation_fb=None, commit=True):
+    """Ajoute un prospect et renvoie son code.
+
+    commit=False sert à l'import : tout est validé (ou annulé) d'un seul coup.
+    """
     code = prochain_code(conn)
-    colonnes = ["code"] + COLONNES
+    colonnes = ["code", "conversation_fb"] + COLONNES
     marques = ", ".join("?" for _ in colonnes)
     conn.execute(
         f"INSERT INTO prospects ({', '.join(colonnes)}) VALUES ({marques})",
-        [code] + [valeurs[c] for c in COLONNES],
+        [code, conversation_fb] + [valeurs[c] for c in COLONNES],
     )
-    conn.commit()
+    if commit:
+        conn.commit()
     return code
 
 
@@ -152,13 +156,14 @@ def valider_relance(formulaire):
     return {"date": jour, "texte": _texte(formulaire, "texte")}, erreurs
 
 
-def ajouter_relance(conn, prospect_id, valeurs):
+def ajouter_relance(conn, prospect_id, valeurs, commit=True):
     """Ajoute une relance à un prospect."""
     conn.execute(
         "INSERT INTO relances (prospect_id, date, texte) VALUES (?, ?, ?)",
         (prospect_id, valeurs["date"], valeurs["texte"]),
     )
-    conn.commit()
+    if commit:
+        conn.commit()
 
 
 def lister_relances(conn, prospect_id):
