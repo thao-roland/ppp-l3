@@ -39,6 +39,14 @@ h2 { margin-top: 2rem; font-size: 1.15rem; }
 .colonne:hover .zone { fill: #eef1f4; }
 .serie-reponse { fill: #2a78d6; background: #2a78d6; }
 .serie-sans { fill: #eb6834; background: #eb6834; }
+.tuile-texte { font-size: 1.3rem !important; }
+.verdict { padding: 0.6rem 1rem; background: #fff; border-left: 4px solid #8a8a84; }
+.verdict-trop_peu, .verdict-trop-peu { background: #fdf3df; border-left-color: #b77900; }
+.verdict-significatif { background: #e3f2e1; border-left-color: #4a9a45; }
+.alerte-courte { font-size: 0.8rem; color: #7a5200; white-space: normal; }
+.intervalle { position: relative; display: inline-block; width: 90px; height: 10px; margin-left: 0.4rem; vertical-align: middle; background: #eef1f4; border-radius: 3px; }
+.plage { position: absolute; top: 2px; height: 6px; background: #a9c9ef; border-radius: 3px; }
+.point { position: absolute; top: 1px; width: 8px; height: 8px; margin-left: -4px; background: #2a78d6; border-radius: 50%; }
 details { margin-top: 0.6rem; font-size: 0.9rem; }
 summary { cursor: pointer; margin-bottom: 0.4rem; }
 

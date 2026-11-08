@@ -113,7 +113,7 @@
 {% if not nb_version_renseignee %}
   <p class="note">Aucune version renseignée : la comparaison sera possible une fois les versions complétées dans les fiches.</p>
 {% else %}
-  <p class="note">Simple comparaison des chiffres : un écart ne prouve rien tant qu'il n'est pas testé (étape 5).</p>
+  <p class="note">Simple comparaison des chiffres : un écart ne prouve rien à lui seul. Le test est sur la page <a href="{{ url_for('tableau_bord.page_analyse') }}">Analyse</a>.</p>
 {% endif %}
 {{ comparaison(versions, "Version") }}
 

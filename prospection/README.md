@@ -1,6 +1,6 @@
 # prospection
 
-> **Statut : en cours de réalisation, étapes 1 à 4 sur 6 terminées.**
+> **Statut : en cours de réalisation, étapes 1 à 5 sur 6 terminées.**
 
 Petit outil (appli web **en local**) pour suivre ma prospection de sites web auprès de petites entreprises, surtout via Facebook / Messenger, et en sortir de vraies données pour mes rapports de PPP.
 
@@ -14,7 +14,7 @@ Il est fait avec l'aide de **Claude Code**, étape par étape : chaque étape es
 | 2 | Import de l'export officiel Facebook (« Télécharger vos informations », JSON) | ✅ fait |
 | 3 | Scoring sur 100 + liste des relances à faire | ✅ fait |
 | 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | ✅ fait |
-| 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | à faire |
+| 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | ✅ fait |
 | 6 | Export CSV anonymisé + export Excel avec graphiques | à faire |
 
 ## Lancer l'outil
@@ -133,7 +133,28 @@ La page **« Tableau de bord »** n'affiche que des totaux : aucun nom ni texte 
 - Tous les taux sont calculés **sur le nombre de contacts**. Sans contact dans un groupe, le taux affiche « — », pas « 0 % ».
 - **Par semaine** (du lundi au dimanche), une réponse est rattachée à la semaine de **mon premier message**, pas à celle où elle est arrivée. On compare ainsi les contacts de chaque semaine. Les dernières semaines paraissent plus basses, car les prospects ont eu moins de temps pour répondre.
 - Les semaines sans contact restent visibles, pour ne pas donner l'impression d'une activité continue.
-- La comparaison A/B ne prouve rien à elle seule : le test statistique arrive à l'étape 5.
+- La comparaison A/B ne prouve rien à elle seule : le test est sur la page « Analyse » (étape 5).
+
+## Analyse statistique (étape 5)
+
+La page **« Analyse »** n'affiche que des totaux. Elle utilise les mêmes définitions de « réponse » que le tableau de bord.
+
+- **Intervalle de Wilson à 95 %** : la fourchette plausible du vrai taux de réponse, au global, par version et par canal.
+- **Test exact de Fisher** (bilatéral) : compare les réponses de la version A et de la version B. Plus la valeur *p* est petite, moins l'écart s'explique par le hasard.
+
+| Situation | Ce qui s'affiche |
+| --- | --- |
+| Moins de **30 contacts** dans A ou dans B | « Trop peu de données pour conclure » |
+| 30 contacts ou plus, *p* < 0,05 | la version qui obtient plus de réponses, écart significatif |
+| 30 contacts ou plus, *p* ≥ 0,05 | pas de différence démontrée (ce qui ne prouve pas que les versions se valent) |
+
+Les seuils sont en haut de `analyse.py` (`MIN_CONTACTS_PAR_GROUPE`, `SEUIL_P`). Le seuil de 30 est une règle de prudence que j'ai choisie : ce n'est pas une loi statistique. Il s'applique même si l'écart paraît énorme, pour éviter de conclure sur quelques messages. La valeur *p* reste affichée pour la transparence.
+
+**Limites à garder en tête :**
+
+- Ces calculs supposent des contacts comparables. Si A et B n'ont pas été envoyées aux mêmes périodes ou aux mêmes métiers, un écart peut venir d'autre chose que du message.
+- Toute réponse compte, y compris une réponse automatique d'une Page ou un refus poli.
+- Sans version renseignée dans les fiches, la comparaison A/B reste vide.
 
 ## Ce que contient un prospect
 
@@ -187,6 +208,12 @@ J'ai ajouté une case **« dates estimées »** : certaines dates de mon début 
 
 **Une seule définition de « réponse » et d'« intérêt » (`tableau.py`).** Une fiche complétée à la main peut être « signée » sans date de réponse : elle compte quand même comme réponse. Tous les chiffres restent ainsi cohérents entre eux (jamais plus de signés que de réponses). *Écarté :* compter seulement la colonne `date_reponse`, qui oublierait ces fiches.
 
+**Intervalle de Wilson.** Il reste correct avec peu de contacts ou avec un taux proche de 0 ou de 100 %, et ne sort jamais de 0–100 %. *Écarté :* l'intervalle classique « taux ± 1,96 × erreur type » (Wald), qui donne par exemple une marge nulle pour 0 réponse sur 10.
+
+**Test exact de Fisher.** Il calcule une probabilité exacte, sans hypothèse sur la taille des groupes. *Écarté :* le test du khi-deux, qui est une approximation et devient fragile avec de petits effectifs.
+
+**Calculs écrits dans `analyse.py`, avec la bibliothèque standard.** Les deux formules tiennent en quelques lignes, se relisent, et les tests les comparent à des valeurs de référence. *Écarté :* SciPy, une grosse dépendance pour deux calculs.
+
 **Tests avec pytest.** Chaque test utilise une base temporaire jetable ; je vérifie les ajouts, les modifications, les refus de données incorrectes, la sécurité et l'import. *Écarté :* `unittest`, plus verbeux.
 
 ## Organisation du dossier
@@ -203,7 +230,8 @@ prospection/
 ├── scoring.py        calcul du score et liste des relances à faire
 ├── scoring.toml      règles du score et délais (modifiable)
 ├── tableau.py        chiffres du tableau de bord (totaux seulement)
-├── pages_tableau.py  page « Tableau de bord »
+├── analyse.py        statistiques (intervalle de Wilson, test de Fisher)
+├── pages_tableau.py  pages « Tableau de bord » et « Analyse »
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS

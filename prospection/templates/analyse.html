@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block titre %}Analyse{% endblock %}
+
+{% macro ligne_taux(l, trop_peu) %}
+  <tr>
+    <td>{{ l.libelle }}</td>
+    <td>{{ l.contacts }}</td>
+    <td>{{ l.reponses }}</td>
+    <td>{{ l.taux_reponse|pourcent }}</td>
+    <td>
+      {% if l.bas is none %}—{% else %}
+        {{ l.bas|pourcent }} à {{ l.haut|pourcent }}
+        <span class="intervalle" aria-hidden="true">
+          <span class="plage" style="left: {{ l.bas }}%; width: {{ l.haut - l.bas }}%"></span>
+          <span class="point" style="left: {{ l.taux_reponse }}%"></span>
+        </span>
+      {% endif %}
+    </td>
+    <td>{% if not l.assez %}<span class="alerte-courte">{{ trop_peu }}</span>{% endif %}</td>
+  </tr>
+{% endmacro %}
+
+{% macro table_taux(lignes, titre_colonne, trop_peu) %}
+<div class="defilement">
+<table class="chiffres">
+  <thead>
+    <tr><th>{{ titre_colonne }}</th><th>Contacts</th><th>Réponses</th><th>Taux</th><th>Intervalle à 95 %</th><th></th></tr>
+  </thead>
+  <tbody>{% for l in lignes %}{{ ligne_taux(l, trop_peu) }}{% endfor %}</tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% block contenu %}
+<h1>Analyse</h1>
+
+{% if not total.contacts %}
+  <p>Aucun prospect pour l'instant : l'analyse se remplira après le premier contact.</p>
+{% else %}
+
+<section class="tuiles">
+  <div class="tuile">
+    <span class="tuile-titre">Taux de réponse</span>
+    <strong>{{ total.taux_reponse|pourcent }}</strong>
+    <span class="tuile-detail">{{ total.reponses }} sur {{ total.contacts }}</span>
+  </div>
+  <div class="tuile">
+    <span class="tuile-titre">Intervalle de confiance à 95 %</span>
+    <strong class="tuile-texte">{{ total.bas|pourcent }} à {{ total.haut|pourcent }}</strong>
+    <span class="tuile-detail">fourchette plausible du vrai taux</span>
+  </div>
+</section>
+{% if not total.assez %}
+  <p class="verdict verdict-trop-peu"><strong>{{ trop_peu }}</strong> : moins de {{ minimum }} contacts au total.</p>
+{% endif %}
+
+<h2>Version A / B du message</h2>
+<p class="verdict verdict-{{ conclusion_ab.niveau }}">{{ conclusion_ab.texte }}</p>
+{{ table_taux(versions, "Version", trop_peu) }}
+<p class="note">Test exact de Fisher, A contre B : p = {{ conclusion_ab.p|valeur_p }}. Plus p est petit, moins l'écart s'explique par le hasard.</p>
+
+<h2>Canaux</h2>
+{{ table_taux(canaux, "Canal", trop_peu) }}
+
+<h2>Comment lire ces chiffres</h2>
+<ul class="note">
+  <li>L'intervalle donne les valeurs plausibles du taux de réponse. Plus il y a de contacts, plus il est étroit.</li>
+  <li>Un écart significatif ne dit pas pourquoi une version marche mieux : si A et B n'ont pas été envoyées aux mêmes périodes ou aux mêmes métiers, autre chose peut l'expliquer.</li>
+  <li>Toute réponse compte, y compris une réponse automatique d'une Page ou un refus poli.</li>
+</ul>
+
+{% endif %}
+{% endblock %}
