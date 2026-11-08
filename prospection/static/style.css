@@ -18,5 +18,29 @@ label.case input { display: inline; width: auto; }
 button { padding: 0.5rem 1rem; font: inherit; cursor: pointer; }
 .relance { display: flex; gap: 1rem; align-items: end; }
 
+/* Tableau de bord : les couleurs des séries ont été contrôlées pour le daltonisme. */
+h2 { margin-top: 2rem; font-size: 1.15rem; }
+.note { color: #5a5a55; font-size: 0.88rem; margin: 0.3rem 0 0.8rem; }
+.tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.8rem; }
+.tuile { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.8rem 1rem; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
+.tuile strong { font-size: 1.8rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tuile-titre { font-size: 0.85rem; color: #333; }
+.tuile-detail { font-size: 0.8rem; color: #5a5a55; }
+.chiffres td:not(:first-child), .chiffres th:not(:first-child) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.defilement { overflow-x: auto; }
+.jauge { display: inline-block; width: 70px; height: 6px; margin-left: 0.4rem; background: #dfe8f3; border-radius: 3px; vertical-align: middle; overflow: hidden; }
+.jauge span { display: block; height: 100%; background: #2a78d6; }
+.legende { display: flex; gap: 1.2rem; margin: 0.4rem 0; font-size: 0.85rem; }
+.pastille { display: inline-block; width: 10px; height: 10px; margin-right: 0.35rem; border-radius: 2px; }
+.graphique { display: block; width: 100%; height: auto; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
+.grille { stroke: #e8e8e4; stroke-width: 1; }
+.axe { fill: #5a5a55; font-size: 12px; font-variant-numeric: tabular-nums; }
+.zone { fill: transparent; }
+.colonne:hover .zone { fill: #eef1f4; }
+.serie-reponse { fill: #2a78d6; background: #2a78d6; }
+.serie-sans { fill: #eb6834; background: #eb6834; }
+details { margin-top: 0.6rem; font-size: 0.9rem; }
+summary { cursor: pointer; margin-bottom: 0.4rem; }
+
 .message { background: #e3f2e1; padding: 0.6rem 1rem; border-left: 4px solid #4a9a45; }
 .erreur { color: #b00020; font-size: 0.85rem; }

@@ -1,6 +1,6 @@
 # prospection
 
-> **Statut : en cours de réalisation, étapes 1 à 3 sur 6 terminées.**
+> **Statut : en cours de réalisation, étapes 1 à 4 sur 6 terminées.**
 
 Petit outil (appli web **en local**) pour suivre ma prospection de sites web auprès de petites entreprises, surtout via Facebook / Messenger, et en sortir de vraies données pour mes rapports de PPP.
 
@@ -13,7 +13,7 @@ Il est fait avec l'aide de **Claude Code**, étape par étape : chaque étape es
 | 1 | Base SQLite + ajout / modification manuelle d'un prospect | ✅ fait |
 | 2 | Import de l'export officiel Facebook (« Télécharger vos informations », JSON) | ✅ fait |
 | 3 | Scoring sur 100 + liste des relances à faire | ✅ fait |
-| 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | à faire |
+| 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | ✅ fait |
 | 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | à faire |
 | 6 | Export CSV anonymisé + export Excel avec graphiques | à faire |
 
@@ -119,6 +119,22 @@ La page d'accueil affiche un **score sur 100** et classe les prospects du plus p
 - Un prospect importé n'a pas d'intérêt renseigné, et son site est « inconnu ». Tant que je ne les complète pas, le score ne distingue presque que « a répondu » ou non, et la date.
 - Avec `DELAI_MIN_RELANCE_HEURES = 0` (import), plusieurs messages envoyés d'affilée comptent comme plusieurs relances.
 
+## Tableau de bord (étape 4)
+
+La page **« Tableau de bord »** n'affiche que des totaux : aucun nom ni texte de message.
+
+| Indicateur | Définition |
+| --- | --- |
+| Contacts | tous les prospects de la base |
+| Réponses | une date de réponse, ou un statut (a répondu / intéressé / signé) ou un intérêt qui suppose une réponse |
+| Intéressés | intérêt « curieux » ou « demande de prix », ou statut intéressé / signé |
+| Signés | statut « signé » |
+
+- Tous les taux sont calculés **sur le nombre de contacts**. Sans contact dans un groupe, le taux affiche « — », pas « 0 % ».
+- **Par semaine** (du lundi au dimanche), une réponse est rattachée à la semaine de **mon premier message**, pas à celle où elle est arrivée. On compare ainsi les contacts de chaque semaine. Les dernières semaines paraissent plus basses, car les prospects ont eu moins de temps pour répondre.
+- Les semaines sans contact restent visibles, pour ne pas donner l'impression d'une activité continue.
+- La comparaison A/B ne prouve rien à elle seule : le test statistique arrive à l'étape 5.
+
 ## Ce que contient un prospect
 
 Code (`P001`, `P002`…), nom d'entreprise, métier, ville, canal, date du 1er message, version du message (A ou B), texte envoyé, réponse (date), intérêt (aucun / curieux / demande de prix), tarif proposé, acompte, statut (contacté / relancé / a répondu / intéressé / signé / perdu), a déjà un site (oui / non / inconnu).
@@ -165,6 +181,12 @@ J'ai ajouté une case **« dates estimées »** : certaines dates de mon début 
 
 **Score calculé à l'affichage, pas enregistré.** Il dépend de la date du jour (échange récent) et des règles : un score enregistré serait vite périmé. Pour quelques centaines de prospects, le calcul est immédiat. *Écarté :* une colonne `score` en base, qu'il faudrait recalculer chaque jour et après chaque changement de règle.
 
+**Graphique dessiné en SVG par le serveur, sans JavaScript.** Python calcule la position des barres et la page les dessine ; l'infobulle au survol est celle du navigateur (`<title>`). Rien à télécharger et l'outil fonctionne sans Internet. *Écarté :* Chart.js ou Plotly (une bibliothèque de plus, pour un seul graphique) ; matplotlib (une image fixe, sans survol, et une grosse dépendance).
+
+**Barres empilées « ont répondu / sans réponse ».** Une seule échelle montre à la fois le volume de contacts et la part de réponses. *Écarté :* une courbe de taux sur un second axe, qui se lit mal et peut faire croire à un lien entre les deux courbes. Le détail chiffré reste disponible dans un tableau sous le graphique.
+
+**Une seule définition de « réponse » et d'« intérêt » (`tableau.py`).** Une fiche complétée à la main peut être « signée » sans date de réponse : elle compte quand même comme réponse. Tous les chiffres restent ainsi cohérents entre eux (jamais plus de signés que de réponses). *Écarté :* compter seulement la colonne `date_reponse`, qui oublierait ces fiches.
+
 **Tests avec pytest.** Chaque test utilise une base temporaire jetable ; je vérifie les ajouts, les modifications, les refus de données incorrectes, la sécurité et l'import. *Écarté :* `unittest`, plus verbeux.
 
 ## Organisation du dossier
@@ -180,6 +202,8 @@ prospection/
 ├── importer_cli.py   import en ligne de commande (nombres seulement)
 ├── scoring.py        calcul du score et liste des relances à faire
 ├── scoring.toml      règles du score et délais (modifiable)
+├── tableau.py        chiffres du tableau de bord (totaux seulement)
+├── pages_tableau.py  page « Tableau de bord »
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS

@@ -11,6 +11,7 @@ from flask import Flask, abort, flash, g, redirect, render_template, request, ur
 import db
 import modeles
 import pages_import
+import pages_tableau
 import scoring
 
 
@@ -37,6 +38,7 @@ def create_app(donnees=None):
     _brancher_securite(app)
     _brancher_routes(app)
     app.register_blueprint(pages_import.bp)
+    app.register_blueprint(pages_tableau.bp)
     return app
 
 

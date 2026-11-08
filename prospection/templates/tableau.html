@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block titre %}Tableau de bord{% endblock %}
+
+{% macro comparaison(lignes, titre_colonne) %}
+<div class="defilement">
+<table class="chiffres">
+  <thead>
+    <tr>
+      <th>{{ titre_colonne }}</th><th>Contacts</th><th>Réponses</th><th>Taux de réponse</th>
+      <th>Intéressés</th><th>Taux d'intérêt</th><th>Signés</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for l in lignes %}
+    <tr>
+      <td>{{ l.libelle }}</td>
+      <td>{{ l.contacts }}</td>
+      <td>{{ l.reponses }}</td>
+      <td>
+        {{ l.taux_reponse|pourcent }}
+        {% if l.taux_reponse is not none %}<span class="jauge"><span style="width: {{ l.taux_reponse }}%"></span></span>{% endif %}
+      </td>
+      <td>{{ l.interesses }}</td>
+      <td>{{ l.taux_interet|pourcent }}</td>
+      <td>{{ l.signes }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% block contenu %}
+<h1>Tableau de bord</h1>
+
+{% if not total.contacts %}
+  <p>Aucun prospect pour l'instant : le tableau se remplira après le premier contact.</p>
+{% else %}
+
+<section class="tuiles">
+  <div class="tuile">
+    <span class="tuile-titre">Contacts</span>
+    <strong>{{ total.contacts }}</strong>
+    <span class="tuile-detail">prospects contactés</span>
+  </div>
+  <div class="tuile">
+    <span class="tuile-titre">Taux de réponse</span>
+    <strong>{{ total.taux_reponse|pourcent }}</strong>
+    <span class="tuile-detail">{{ total.reponses }} sur {{ total.contacts }}</span>
+  </div>
+  <div class="tuile">
+    <span class="tuile-titre">Taux d'intérêt</span>
+    <strong>{{ total.taux_interet|pourcent }}</strong>
+    <span class="tuile-detail">{{ total.interesses }} sur {{ total.contacts }}</span>
+  </div>
+  <div class="tuile">
+    <span class="tuile-titre">Signés</span>
+    <strong>{{ total.signes }}</strong>
+    <span class="tuile-detail">{{ total.taux_signature|pourcent }} des contacts</span>
+  </div>
+</section>
+
+{% if nb_dates_estimees %}
+  <p class="note">{{ nb_dates_estimees }} prospect(s) ont des dates estimées.</p>
+{% endif %}
+
+<h2>Évolution par semaine</h2>
+<p class="note">Contacts de chaque semaine, selon qu'ils ont répondu ou non.</p>
+{% if graphique %}
+<p class="legende">
+  <span><i class="pastille serie-reponse"></i>Ont répondu</span>
+  <span><i class="pastille serie-sans"></i>Sans réponse</span>
+</p>
+<svg class="graphique" viewBox="0 0 {{ graphique.largeur }} {{ graphique.hauteur }}" role="img"
+     aria-label="Contacts par semaine, avec ou sans réponse. Les valeurs sont dans le tableau en dessous.">
+  {% for g in graphique.graduations %}
+    <line class="grille" x1="{{ graphique.gauche }}" x2="{{ graphique.droite }}" y1="{{ g.y }}" y2="{{ g.y }}"></line>
+    <text class="axe" x="{{ graphique.gauche - 8 }}" y="{{ g.y + 4 }}" text-anchor="end">{{ g.valeur }}</text>
+  {% endfor %}
+  {% for b in graphique.barres %}
+    <g class="colonne">
+      <title>{{ b.titre }}</title>
+      <rect class="zone" x="{{ b.x_creneau }}" y="{{ graphique.haut }}" width="{{ b.creneau }}" height="{{ graphique.base - graphique.haut }}"></rect>
+      {% for s in b.segments %}<path class="{{ s.classe }}" d="{{ s.chemin }}"></path>{% endfor %}
+      {% if b.etiquette %}<text class="axe" x="{{ b.centre }}" y="{{ graphique.base + 18 }}" text-anchor="middle">{{ b.etiquette }}</text>{% endif %}
+    </g>
+  {% endfor %}
+</svg>
+<details>
+  <summary>Voir les chiffres par semaine</summary>
+  <div class="defilement">
+  <table class="chiffres">
+    <thead><tr><th>Semaine du</th><th>Contacts</th><th>Réponses</th><th>Taux de réponse</th><th>Intéressés</th><th>Signés</th></tr></thead>
+    <tbody>
+    {% for s in semaines %}
+      <tr>
+        <td>{{ s.libelle }}</td><td>{{ s.contacts }}</td><td>{{ s.reponses }}</td>
+        <td>{{ s.taux_reponse|pourcent }}</td><td>{{ s.interesses }}</td><td>{{ s.signes }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</details>
+{% else %}
+  <p>Aucun prospect n'a de date de premier message.</p>
+{% endif %}
+{% if nb_sans_date %}
+  <p class="note">{{ nb_sans_date }} prospect(s) sans date ne sont pas dans ce graphique.</p>
+{% endif %}
+
+<h2>Version A / B du message</h2>
+{% if not nb_version_renseignee %}
+  <p class="note">Aucune version renseignée : la comparaison sera possible une fois les versions complétées dans les fiches.</p>
+{% else %}
+  <p class="note">Simple comparaison des chiffres : un écart ne prouve rien tant qu'il n'est pas testé (étape 5).</p>
+{% endif %}
+{{ comparaison(versions, "Version") }}
+
+<h2>Canaux</h2>
+{{ comparaison(canaux, "Canal") }}
+
+{% endif %}
+{% endblock %}
