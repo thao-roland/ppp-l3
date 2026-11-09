@@ -15,6 +15,11 @@ def ligne(contacts, reponses):
             "taux_reponse": tableau.taux(reponses, contacts)}
 
 
+def ab(version_a, version_b):
+    """Compare deux lignes en les appelant A et B."""
+    return analyse.conclure_ab({**version_a, "libelle": "A"}, {**version_b, "libelle": "B"})
+
+
 # --- Wilson (valeurs de référence calculées à la main) -----------------------
 @pytest.mark.parametrize("succes, total, bas, haut", [
     (8, 10, 0.4902, 0.9433),
@@ -74,24 +79,24 @@ def test_fisher_jamais_plus_de_1():
 
 # --- Conclusions -------------------------------------------------------------
 def test_aucun_contact_trop_peu():
-    conclusion = analyse.conclure_ab(ligne(0, 0), ligne(0, 0))
+    conclusion = ab(ligne(0, 0), ligne(0, 0))
     assert conclusion["niveau"] == "trop_peu"
     assert conclusion["p"] is None
     assert analyse.TROP_PEU in conclusion["texte"]
 
 
 def test_seuil_29_contacts_trop_peu_meme_avec_un_gros_ecart():
-    conclusion = analyse.conclure_ab(ligne(29, 28), ligne(100, 1))
+    conclusion = ab(ligne(29, 28), ligne(100, 1))
     assert conclusion["niveau"] == "trop_peu"
     assert "A : 29, B : 100" in conclusion["texte"]
 
 
 def test_seuil_verifie_sur_chaque_version():
-    assert analyse.conclure_ab(ligne(100, 1), ligne(29, 28))["niveau"] == "trop_peu"
+    assert ab(ligne(100, 1), ligne(29, 28))["niveau"] == "trop_peu"
 
 
 def test_30_contacts_suffisent():
-    assert analyse.conclure_ab(ligne(30, 25), ligne(30, 5))["niveau"] == "significatif"
+    assert ab(ligne(30, 25), ligne(30, 5))["niveau"] == "significatif"
 
 
 @pytest.mark.parametrize("a, b, gagnante", [
@@ -99,11 +104,11 @@ def test_30_contacts_suffisent():
     (ligne(50, 10), ligne(50, 40), "B"),
 ])
 def test_ecart_significatif_nomme_la_bonne_version(a, b, gagnante):
-    assert f"La version {gagnante}" in analyse.conclure_ab(a, b)["texte"]
+    assert f"La version {gagnante}" in ab(a, b)["texte"]
 
 
 def test_pas_de_difference_ne_dit_pas_qu_elles_se_valent():
-    conclusion = analyse.conclure_ab(ligne(50, 20), ligne(50, 21))
+    conclusion = ab(ligne(50, 20), ligne(50, 21))
     assert conclusion["niveau"] == "non_significatif"
     assert "ne prouve pas" in conclusion["texte"]
 

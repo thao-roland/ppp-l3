@@ -1,0 +1,50 @@
+# Règles de l'analyse automatique des messages. 100 % locale : aucun appel à une
+# IA ni à Internet. Ce fichier se modifie à la main ; la commande
+# « python analyser_cli.py » réapplique ensuite les règles à la base.
+#
+# Les expressions sont comparées sans majuscules, sans accents, et avec les tirets
+# remplacés par des espaces. Une expression ne correspond qu'à des mots entiers :
+# « prix » ne se trouve pas dans « mépris ».
+
+[reponses_automatiques]
+# Une réponse arrivée moins vite que ce délai après mon message est suspecte.
+delai_secondes = 120
+formules = [
+  "merci pour votre message",
+  "nous vous répondrons",
+  "notre équipe",
+  "réponse automatique",
+  "horaires",
+  "nous reviendrons vers vous",
+]
+
+[interet]
+# Question sur le prix : intérêt « demande de prix ».
+prix = ["prix", "tarif", "tarifs", "devis", "délai", "délais", "combien", "coûte", "coût"]
+# Réponse positive : intérêt « curieux ». Un point d'interrogation compte aussi.
+curieux = [
+  "pourquoi pas",
+  "ça m'intéresse",
+  "ça m'intéresserait",
+  "dites moi en plus",
+  "dites m'en plus",
+  "en savoir plus",
+  "je veux bien",
+  "volontiers",
+  "d'accord",
+  "oui",
+]
+# Refus : intérêt « aucun ».
+refus = [
+  "non merci",
+  "pas besoin",
+  "pas intéressé",
+  "pas intéressée",
+  "pas intéressés",
+  "pas intéressées",
+  "déjà un site",
+]
+
+[site]
+# Ces expressions mettent « a déjà un site » à oui. Sinon : inconnu.
+deja_un_site = ["j'ai déjà un site", "on a déjà un site", "nous avons déjà un site", "déjà un site"]

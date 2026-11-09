@@ -35,6 +35,20 @@ def choisir_export(exports, demande):
     return exports[0]
 
 
+def afficher_categories(rapport):
+    """Bilan de toute la base : des nombres uniquement."""
+    categories = rapport["categories"]
+    print("Bilan de la base (un prospect peut compter dans plusieurs lignes) :")
+    print(f"  réponses automatiques     : {categories['auto']}")
+    print(f"  vraies réponses           : {categories['vraies']}")
+    print(f"  intéressés (demande prix) : {categories['interesses']}")
+    print(f"  curieux                   : {categories['curieux']}")
+    print(f"  pas intéressés            : {categories['pas_interesses']}")
+    print(f"  à vérifier                : {categories['a_verifier']}")
+    print(f"  sans réponse              : {categories['sans_reponse']}")
+    print(f"Versions de message         : {rapport['versions']}")
+
+
 def afficher(rapport):
     """Affiche le rapport : des nombres, jamais de noms ni de messages."""
     if rapport["simulation"]:
@@ -44,11 +58,8 @@ def afficher(rapport):
     print(f"Prospects créés             : {len(rapport['nouveaux'])}")
     print(f"  dont avec une réponse     : {rapport['reponses']}")
     print(f"Relances créées             : {rapport['relances']}")
-    print("Détection des réponses (sur tout l'export) :")
-    print(f"  vraies réponses probables : {rapport['auto_non']}")
-    print(f"  automatiques              : {rapport['auto_oui']}")
-    print(f"  à vérifier                : {rapport['auto_a_verifier']}")
-    print(f"  fiches déjà importées complétées : {rapport['detections_completees']}")
+    print(f"Fiches mises à jour         : {rapport['fiches_mises_a_jour']}")
+    afficher_categories(rapport)
     print("Conversations ignorées :")
     print(f"  déjà importées            : {rapport['deja_importees']}")
     print(f"  groupes                   : {rapport['groupes']}")

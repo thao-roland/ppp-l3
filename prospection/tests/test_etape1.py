@@ -70,7 +70,7 @@ def test_nom_obligatoire(client, conn):
 
 def test_valeurs_non_autorisees_refusees(client, conn):
     for champ, mauvaise in [("statut", "inconnu"), ("interet", "beaucoup"),
-                            ("version_message", "C"), ("canal", "Pigeon")]:
+                            ("version_message", "A1"), ("canal", "Pigeon")]:
         assert ajouter(client, **{champ: mauvaise}).status_code == 400
     assert conn.execute("SELECT COUNT(*) FROM prospects").fetchone()[0] == 0
 

@@ -32,10 +32,7 @@
       {{ erreur("canal") }}
     </label>
     <label>Version du message
-      <select name="version_message">
-        <option value="">—</option>
-        {% for v in versions %}<option {{ "selected" if valeurs.version_message == v }}>{{ v }}</option>{% endfor %}
-      </select>
+      <input name="version_message" maxlength="3" value="{{ valeurs.version_message or '' }}">
       {{ erreur("version_message") }}
     </label>
     <label>A déjà un site

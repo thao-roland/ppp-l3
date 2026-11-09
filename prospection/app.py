@@ -10,9 +10,10 @@ from flask import Flask, abort, flash, g, redirect, render_template, request, ur
 
 import db
 import modeles
+import analyse_messages
+import pages_a_verifier
 import pages_exports
 import pages_import
-import pages_qualifier
 import pages_tableau
 import scoring
 
@@ -35,6 +36,7 @@ def create_app(donnees=None):
     db.initialiser(conn)
     conn.close()
     scoring.charger_regles()  # des règles abîmées se voient dès le démarrage
+    analyse_messages.charger_regles()
 
     _brancher_base(app)
     _brancher_securite(app)
@@ -42,7 +44,7 @@ def create_app(donnees=None):
     app.register_blueprint(pages_import.bp)
     app.register_blueprint(pages_tableau.bp)
     app.register_blueprint(pages_exports.bp)
-    app.register_blueprint(pages_qualifier.bp)
+    app.register_blueprint(pages_a_verifier.bp)
     return app
 
 
@@ -84,7 +86,7 @@ def _listes_formulaire():
     """Listes de choix affichées dans le formulaire."""
     return {
         "statuts": modeles.STATUTS, "interets": modeles.INTERETS,
-        "versions": modeles.VERSIONS, "canaux": modeles.CANAUX,
+        "canaux": modeles.CANAUX,
         "reponses_automatiques": modeles.REPONSES_AUTOMATIQUES,
     }
 

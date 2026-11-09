@@ -155,9 +155,9 @@ def test_import_remplit_les_champs(client, conn):
     p = prospect(conn, "Boulangerie Fictive Étoile")
     assert p["code"].startswith("P") and p["canal"] == "Messenger"
     assert p["date_premier_message"] == "2026-10-01" and p["date_reponse"] == "2026-10-02"
-    assert p["statut"] == "a répondu" and p["interet"] == "aucun"
+    assert p["statut"] == "a répondu" and p["interet"] == "demande de prix"
     assert p["dates_estimees"] == 0  # dates exactes : pas « estimées »
-    assert p["version_message"] is None and p["conversation_fb"] == "1000000001"
+    assert p["version_message"].isalpha() and p["conversation_fb"] == "1000000001"
     assert [(r["date"], r["texte"]) for r in relances(conn, "Garage Imaginaire Léo")][0][0] == "2026-10-12"
 
 
@@ -204,11 +204,11 @@ def test_erreur_en_cours_d_import_n_enregistre_rien(client, conn, monkeypatch):
     appels = {"n": 0}
     vrai = importation._enregistrer
 
-    def en_panne(connexion, prospect_):
+    def en_panne(connexion, prospect_, resultat):
         appels["n"] += 1
         if appels["n"] == 3:
             raise RuntimeError("panne")
-        return vrai(connexion, prospect_)
+        return vrai(connexion, prospect_, resultat)
 
     monkeypatch.setattr(importation, "_enregistrer", en_panne)
     with pytest.raises(RuntimeError):

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titre %}À vérifier{% endblock %}
+
+{% macro correction(champ, libelle, options) %}
+  <div class="qualif-groupe" data-groupe>{{ libelle }}
+    <div class="choix" role="group">
+      {% for o in options %}<button type="button" data-champ="{{ champ }}" data-valeur="{{ o }}">{{ o }}</button>{% endfor %}
+    </div>
+  </div>
+{% endmacro %}
+
+{% block contenu %}
+<h1>À vérifier</h1>
+<p class="note">Seulement les cas douteux de l'analyse automatique. Un clic corrige, et l'analyse ne remplacera plus ce choix.</p>
+
+<section class="tuiles">
+  <div class="tuile">
+    <span class="tuile-titre">Restent à vérifier</span>
+    <strong id="nb-restants">{{ prospects|length }}</strong>
+    <span class="tuile-detail">prospects</span>
+  </div>
+  <div class="tuile">
+    <span class="tuile-titre">Corrections faites</span>
+    <strong id="nb-corrections">{{ nb_corrections }}</strong>
+    <span class="tuile-detail">champs corrigés à la main</span>
+  </div>
+</section>
+
+<p id="rien-a-verifier" class="message" {% if prospects %}hidden{% endif %}>Rien à vérifier pour l'instant.</p>
+
+<div class="liste-verifier">
+{% for p in prospects %}
+<article class="qualif" data-url="{{ url_for('a_verifier.corriger', code=p.code) }}">
+  <div class="qualif-tete">
+    <strong>{{ p.code }}</strong>
+    <span>{{ p.nom_entreprise }}</span>
+    <span>Réponse : {{ p.date_reponse or "date inconnue" }}</span>
+    <a href="{{ url_for('modifier', code=p.code) }}">Fiche</a>
+    <span class="qualif-etat" role="status"></span>
+  </div>
+  <div class="qualif-champs">
+    {% if p.reponse_automatique == a_verifier %}{{ correction("reponse_automatique", "Réponse automatique ?", choix.reponse_automatique) }}{% endif %}
+    {% if p.interet == a_verifier %}{{ correction("interet", "Intérêt", choix.interet) }}{% endif %}
+  </div>
+</article>
+{% endfor %}
+</div>
+
+<script src="{{ url_for('static', filename='a_verifier.js') }}" defer></script>
+{% endblock %}

@@ -66,22 +66,25 @@ def avec_intervalle(ligne):
 
 
 def conclure_ab(version_a, version_b):
-    """Conclusion de la comparaison A/B : niveau, phrase et valeur p."""
+    """Conclusion de la comparaison de deux versions : niveau, phrase et valeur p."""
+    a, b = version_a["libelle"], version_b["libelle"]
     n_a, n_b = version_a["contacts"], version_b["contacts"]
     p = fisher_bilateral(version_a["reponses"], n_a - version_a["reponses"],
                          version_b["reponses"], n_b - version_b["reponses"])
     if n_a < MIN_CONTACTS_PAR_GROUPE or n_b < MIN_CONTACTS_PAR_GROUPE:
-        return {"niveau": "trop_peu", "p": p,
-                "texte": f"{TROP_PEU} : il faut au moins {MIN_CONTACTS_PAR_GROUPE} contacts "
-                         f"par version (A : {n_a}, B : {n_b})."}
-    if p < SEUIL_P:
-        gagnante = "A" if version_a["taux_reponse"] > version_b["taux_reponse"] else "B"
-        return {"niveau": "significatif", "p": p,
-                "texte": f"La version {gagnante} obtient plus de réponses, et l'écart est "
-                         f"statistiquement significatif (p = {format_p(p)})."}
-    return {"niveau": "non_significatif", "p": p,
-            "texte": f"Pas de différence démontrée entre A et B (p = {format_p(p)}). "
-                     "Cela ne prouve pas qu'elles se valent."}
+        niveau = "trop_peu"
+        texte = (f"{TROP_PEU} : il faut au moins {MIN_CONTACTS_PAR_GROUPE} contacts "
+                 f"par version ({a} : {n_a}, {b} : {n_b}).")
+    elif p < SEUIL_P:
+        gagnante = a if version_a["taux_reponse"] > version_b["taux_reponse"] else b
+        niveau = "significatif"
+        texte = (f"La version {gagnante} obtient plus de réponses, et l'écart est "
+                 f"statistiquement significatif (p = {format_p(p)}).")
+    else:
+        niveau = "non_significatif"
+        texte = (f"Pas de différence démontrée entre {a} et {b} (p = {format_p(p)}). "
+                 "Cela ne prouve pas qu'elles se valent.")
+    return {"niveau": niveau, "p": p, "texte": texte, "a": a, "b": b}
 
 
 def construire(prospects):

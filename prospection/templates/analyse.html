@@ -61,10 +61,11 @@
   <p class="verdict verdict-trop-peu"><strong>{{ trop_peu }}</strong> : moins de {{ minimum }} contacts au total.</p>
 {% endif %}
 
-<h2>Version A / B du message</h2>
+<h2>Versions du message</h2>
+<p class="note">Une version par texte exact de mon premier message. Le test compare les deux versions les plus utilisées.</p>
 <p class="verdict verdict-{{ conclusion_ab.niveau }}">{{ conclusion_ab.texte }}</p>
 {{ table_taux(versions, "Version", trop_peu) }}
-<p class="note">Test exact de Fisher, A contre B : p = {{ conclusion_ab.p|valeur_p }}. Plus p est petit, moins l'écart s'explique par le hasard.</p>
+<p class="note">Test exact de Fisher, {{ conclusion_ab.a }} contre {{ conclusion_ab.b }} : p = {{ conclusion_ab.p|valeur_p }}. Plus p est petit, moins l'écart s'explique par le hasard.</p>
 
 <h2>Canaux</h2>
 {{ table_taux(canaux, "Canal", trop_peu) }}
@@ -73,7 +74,7 @@
 <ul class="note">
   <li>L'intervalle donne les valeurs plausibles du taux de réponse. Plus il y a de contacts, plus il est étroit.</li>
   <li>Un écart significatif ne dit pas pourquoi une version marche mieux : si A et B n'ont pas été envoyées aux mêmes périodes ou aux mêmes métiers, autre chose peut l'expliquer.</li>
-  <li>Le taux compte les vraies réponses, y compris un refus poli. Les réponses automatiques et celles à vérifier sont à part : tant qu'elles ne sont pas corrigées dans <a href="{{ url_for('qualifier.page_qualifier') }}">Qualifier</a>, le vrai taux est peut-être un peu plus haut.</li>
+  <li>Le taux compte les vraies réponses, y compris un refus poli. Les réponses automatiques et celles à vérifier sont à part : tant qu'elles ne sont pas corrigées dans <a href="{{ url_for('a_verifier.page') }}">À vérifier</a>, le vrai taux est peut-être un peu plus haut.</li>
 </ul>
 
 {% endif %}

@@ -1,6 +1,6 @@
 # prospection
 
-> **Statut : les 6 étapes et l'amélioration de l'étape 7 sont réalisées.**
+> **Statut : les 7 étapes sont réalisées.**
 
 Petit outil (appli web **en local**) pour suivre ma prospection de sites web auprès de petites entreprises, surtout via Facebook / Messenger, et en sortir de vraies données pour mes rapports de PPP.
 
@@ -16,7 +16,7 @@ Il est fait avec l'aide de **Claude Code**, étape par étape : chaque étape es
 | 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | ✅ fait |
 | 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | ✅ fait |
 | 6 | Export CSV anonymisé + export Excel avec graphiques | ✅ fait |
-| 7 | Réponses automatiques, écran « Qualifier », exports enrichis | ✅ fait |
+| 7 | Analyse automatique et locale des messages, écran « À vérifier », exports enrichis | ✅ fait |
 
 ## Lancer l'outil
 
@@ -93,7 +93,7 @@ Options : `--export NOM` (si plusieurs exports sont dans `exports_facebook/`) et
 - Un fichier abîmé ne bloque pas le reste : la conversation est comptée comme « illisible ».
 - Les dates sont calculées à l'**heure de Paris**.
 - Mon nom est **deviné** (c'est le nom présent dans presque toutes les conversations) ; on peut aussi le taper dans le formulaire.
-- Les prospects importés n'ont ni version de message (A/B), ni métier, ni ville, ni intérêt : à compléter à la main.
+- L'intérêt, la version, le tarif, le site et la réponse automatique sont remplis par l'analyse automatique (voir plus bas). Le métier, la ville, l'acompte et « signé » restent à la main.
 - Réglage possible dans `facebook.py` : `DELAI_MIN_RELANCE_HEURES` (0 par défaut : tous mes messages sans réponse comptent comme relances ; mettre 12 pour ignorer les messages envoyés d'affilée le même jour).
 
 Le rapport affiché après l'import ne contient que des nombres et des codes `P00X`, jamais de noms ni de messages.
@@ -118,7 +118,7 @@ La page d'accueil affiche un **score sur 100** et classe les prospects du plus p
 **Limites à garder en tête :**
 
 - L'import n'enregistre que la **première** réponse. Le « dernier échange » ne voit donc pas la suite d'une conversation.
-- Un prospect importé n'a pas d'intérêt renseigné, et son site est « inconnu ». Tant que je ne les complète pas, le score ne distingue presque que « a répondu » ou non, et la date.
+- L'intérêt et le site viennent de règles de mots : un cas mal classé donne un mauvais score. Un intérêt « à vérifier » ne rapporte aucun point tant qu'il n'est pas corrigé.
 - Avec `DELAI_MIN_RELANCE_HEURES = 0` (import), plusieurs messages envoyés d'affilée comptent comme plusieurs relances.
 
 ## Tableau de bord (étape 4)
@@ -129,25 +129,25 @@ La page **« Tableau de bord »** n'affiche que des totaux : aucun nom ni texte 
 | --- | --- |
 | Contacts | tous les prospects de la base |
 | Vraies réponses | une date de réponse ou un statut qui en suppose une, **sauf** si la réponse est marquée automatique ou à vérifier. Un prospect intéressé ou signé compte toujours. |
-| Automatiques / À vérifier | affichées à côté, hors du taux de réponse (voir « Réponses automatiques ») |
+| Automatiques / À vérifier | affichées à côté, hors du taux de réponse (voir « Analyse automatique des messages ») |
 | Intéressés | intérêt « curieux » ou « demande de prix », ou statut intéressé / signé |
 | Signés | statut « signé » |
 
 - Tous les taux sont calculés **sur le nombre de contacts**. Sans contact dans un groupe, le taux affiche « — », pas « 0 % ».
 - **Par semaine** (du lundi au dimanche), une réponse est rattachée à la semaine de **mon premier message**, pas à celle où elle est arrivée. On compare ainsi les contacts de chaque semaine. Les dernières semaines paraissent plus basses, car les prospects ont eu moins de temps pour répondre.
 - Les semaines sans contact restent visibles, pour ne pas donner l'impression d'une activité continue.
-- La comparaison A/B ne prouve rien à elle seule : le test est sur la page « Analyse » (étape 5).
+- Les 10 versions les plus utilisées sont détaillées, les suivantes sont regroupées. Comparer les chiffres ne prouve rien à soi seul : le test est sur la page « Analyse » (étape 5).
 
 ## Analyse statistique (étape 5)
 
 La page **« Analyse »** n'affiche que des totaux. Elle utilise les mêmes définitions de « réponse » que le tableau de bord : Wilson et Fisher portent sur les **vraies réponses**.
 
 - **Intervalle de Wilson à 95 %** : la fourchette plausible du vrai taux de réponse, au global, par version et par canal.
-- **Test exact de Fisher** (bilatéral) : compare les réponses de la version A et de la version B. Plus la valeur *p* est petite, moins l'écart s'explique par le hasard.
+- **Test exact de Fisher** (bilatéral) : compare les réponses des **deux versions les plus utilisées**. Plus la valeur *p* est petite, moins l'écart s'explique par le hasard.
 
 | Situation | Ce qui s'affiche |
 | --- | --- |
-| Moins de **30 contacts** dans A ou dans B | « Trop peu de données pour conclure » |
+| Moins de **30 contacts** dans l'une des deux versions | « Trop peu de données pour conclure » |
 | 30 contacts ou plus, *p* < 0,05 | la version qui obtient plus de réponses, écart significatif |
 | 30 contacts ou plus, *p* ≥ 0,05 | pas de différence démontrée (ce qui ne prouve pas que les versions se valent) |
 
@@ -157,7 +157,7 @@ Les seuils sont en haut de `analyse.py` (`MIN_CONTACTS_PAR_GROUPE`, `SEUIL_P`). 
 
 - Ces calculs supposent des contacts comparables. Si A et B n'ont pas été envoyées aux mêmes périodes ou aux mêmes métiers, un écart peut venir d'autre chose que du message.
 - Une vraie réponse peut être un refus poli. Les réponses à vérifier non corrigées sont hors du taux, qui peut donc être un peu sous-estimé.
-- Sans version renseignée dans les fiches, la comparaison A/B reste vide.
+- Le test porte sur les deux versions les plus utilisées, pas sur toutes : les autres n'ont souvent pas assez de contacts.
 
 ## Exports (étape 6)
 
@@ -180,42 +180,52 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 
 **Excel** : des totaux et des graphiques seulement (feuilles Résumé, Semaines, Versions AB, Canaux), aucune ligne par prospect. Il reste hors du dépôt. Chaque formule est écrite avec sa valeur déjà calculée : tout s'affiche, même en mode protégé.
 
-## Réponses automatiques (étape 7)
+## Analyse automatique des messages (étape 7)
 
-**Pourquoi.** Beaucoup de Pages Facebook envoient un message automatique dès qu'on leur écrit. Sans tri, chaque message automatique compte comme une réponse et gonfle le taux de réponse : mes rapports diraient que des entreprises m'ont répondu alors que personne n'a lu mon message.
+À l'import, et avec la commande `python analyser_cli.py` (option `--simuler`), chaque conversation est analysée par des **règles de mots**. Les listes et le délai sont dans [`regles_messages.toml`](regles_messages.toml) : je peux les changer sans toucher au programme, puis relancer la commande.
 
-**Comment.** À l'import, chaque première réponse reçoit deux signaux possibles :
+| Champ | Règle |
+| --- | --- |
+| `reponse_automatique` | `oui` si la première réponse arrive en moins de 2 minutes ou contient une formule type ; `non` sinon ; `à vérifier` si les indices se contredisent |
+| `interet` | `demande de prix` (prix, tarif, devis, délai, combien) ; `curieux` (réponse positive ou question) ; `aucun` (refus, ou seulement une réponse automatique) ; `à vérifier` (rien de reconnu, ou refus mêlé d'intérêt) |
+| `version_message` | A, B, C… selon le **texte exact** de mon premier message, dans l'ordre chronologique |
+| `tarif_propose` | premier montant en euros dans **mes** messages après sa demande de prix, sinon vide |
+| `a_deja_site` | `oui` si l'autre le dit, sinon inconnu |
 
-1. elle arrive **moins de 2 minutes** après mon dernier message ;
-2. son texte contient une **formule type** : « merci pour votre message », « nous vous répondrons », « notre équipe », « réponse automatique », « horaires » (sans tenir compte des accents ni des majuscules).
+« Signé », l'acompte, le métier et la ville restent manuels.
 
-| Signaux | `reponse_automatique` | Dans le taux de réponse ? |
-| --- | --- | --- |
-| Aucun | `non` | oui |
-| Un seul | `à vérifier` | non, affichée à côté |
-| Les deux | `oui` | non, affichée à côté |
+**Détails de la détection automatique :**
 
+- Les indices se contredisent quand un message suspect contient aussi des mots humains (« combien », « non merci »…), ou quand une formule type arrive lentement dans une question (« quels sont vos horaires ? »).
 - Si la première réponse est suspecte mais qu'un **message suivant** de l'autre personne n'a aucun signal, quelqu'un a écrit à la main : le résultat est `non`.
-- Un prospect marqué **intéressé ou signé** compte toujours comme vraie réponse.
-- Le texte de la réponse est lu pendant l'import pour chercher les formules, puis oublié : il n'est **jamais enregistré ni affiché**.
-- Réimporter un export complète les fiches sans détection, et ne remplace **jamais** une valeur déjà présente, donc jamais une correction à la main.
-- Les réglages sont en haut de `facebook.py` : `DELAI_REPONSE_AUTO_SECONDES` et `FORMULES_AUTO`.
+- Le taux de réponse ne compte que les vraies réponses. Les réponses automatiques et à vérifier sont affichées à côté. Un prospect marqué intéressé ou signé compte toujours comme vraie réponse.
+
+**Pourquoi une analyse.** Beaucoup de Pages Facebook envoient un message automatique dès qu'on leur écrit. Sans tri, chaque message automatique gonflerait le taux de réponse de mes rapports.
+
+**Pourquoi pas une IA ? Pour la confidentialité.** Mes conversations contiennent des noms et des messages de personnes qui n'ont rien demandé. Les envoyer à un service d'IA, même sérieux, les ferait sortir de mon ordinateur, ce que je me suis interdit pour ce projet. Les règles de mots tournent entièrement en local : aucun appel à Internet, aucun message envoyé nulle part, et un test vérifie que ces fichiers n'importent aucune bibliothèque réseau. Elles sont aussi plus faciles à expliquer à mon tuteur : chaque résultat vient d'une règle qu'on peut relire. *Écarté :* une IA en ligne (confidentialité) ; un modèle installé en local (lourd à installer, et ses décisions sont difficiles à expliquer dans un rapport).
+
+**Ce qui est conservé.** Le texte des réponses est lu pendant l'analyse puis oublié : il n'est **jamais enregistré ni affiché**. C'est pour ça que `analyser_cli.py` relit l'export au lieu de la base. Seuls les résultats sont stockés (`oui`, `curieux`, `450`…).
+
+**Corrections à la main.** Un champ corrigé sur l'écran « À vérifier » ou sur la fiche est noté dans la table `corrections`, et l'analyse ne le remplace plus jamais.
 
 **Limites :**
 
-- **Faux positifs** : une personne devant son téléphone peut répondre en moins de 2 minutes, ou parler d'« horaires » naturellement. C'est pour ça qu'un seul signal donne `à vérifier`, et pas `oui`.
+- **Les règles ne comprennent pas le sens.** « Le prix ne m'intéresse pas » contient « prix » ; une négation ou de l'ironie peuvent tromper l'analyse. Les résultats sont des estimations, qui n'ont pas été comparées à un échantillon relu à la main.
+- **Faux positifs** : une personne qui répond en moins de 2 minutes est classée automatique, sauf si son message contient un mot reconnu.
 - **Faux négatifs** : une réponse automatique programmée plus tard, ou formulée autrement, passe pour une vraie réponse.
-- **Les seuils sont des choix** : ni les 2 minutes ni la liste de formules n'ont été mesurés sur un échantillon relu à la main. Le résultat est une estimation.
-- Tant que les réponses `à vérifier` ne sont pas corrigées, elles sont hors du taux, qui peut être sous-estimé.
-- À l'import, les relances s'arrêtent à la première réponse, même automatique : mes messages envoyés après une réponse automatique ne sont donc pas enregistrés comme relances. Un prospect peut ainsi paraître à relancer alors que je l'ai déjà recontacté.
+- **Un mot suffit** : « oui » seul donne `curieux`, même si c'est une simple politesse.
+- **Une conversation est vue d'un bloc** : un refus suivi plus tard d'un intérêt part en `à vérifier`, sans tenir compte de l'ordre.
+- **Tarif** : c'est le premier montant trouvé, arrondi à l'euro inférieur. « Entre 500 et 800 € » donne 800, et un montant sans €, ni « euros », n'est pas vu.
+- **Versions** : le texte exact compte, donc une seule lettre personnalisée (un prénom) crée une nouvelle version. Une lettre attribuée ne change plus ensuite.
+- À l'import, les relances s'arrêtent à la première réponse, même automatique : mes messages suivants ne sont pas enregistrés comme relances. Un prospect peut ainsi paraître à relancer alors que je l'ai déjà recontacté.
 
-## Écran « Qualifier » (étape 7)
+## Écran « À vérifier » (étape 7)
 
-L'écran **« Qualifier »** liste les prospects qui ont répondu, les réponses à vérifier en premier. Chaque clic enregistre un seul champ, sans recharger la page : réponse automatique, intérêt, version, signé. Le tarif et l'acompte s'enregistrent en quittant la case. Un second clic sur une version ou sur « Signé » annule ; retirer « Signé » remet le statut à « a répondu ».
+L'écran **« À vérifier »** ne montre que les cas douteux, et seulement les champs concernés. Un clic corrige, sans recharger la page : le champ disparaît, et la fiche avec lui quand il n'y a plus de doute. Un compteur indique le nombre de champs corrigés à la main.
 
 ## Ce que contient un prospect
 
-Code (`P001`, `P002`…), nom d'entreprise, métier, ville, canal, date du 1er message, version du message (A ou B), texte envoyé, réponse (date), intérêt (aucun / curieux / demande de prix), tarif proposé, acompte, statut (contacté / relancé / a répondu / intéressé / signé / perdu), a déjà un site (oui / non / inconnu).
+Code (`P001`, `P002`…), nom d'entreprise, métier, ville, canal, date du 1er message, version du message (A, B, C…), texte envoyé, réponse (date), intérêt (aucun / curieux / demande de prix / à vérifier), tarif proposé, acompte, statut (contacté / relancé / a répondu / intéressé / signé / perdu), a déjà un site (oui / non / inconnu).
 
 Les **relances** (date + texte) sont dans une table à part : un prospect peut en avoir plusieurs.
 
@@ -281,9 +291,13 @@ J'ai ajouté une case **« dates estimées »** : certaines dates de mon début 
 
 **Taux et intervalles en formules Excel.** On peut cliquer sur une cellule et vérifier le calcul. Les comptages et la valeur *p* de Fisher sont écrits par l'outil : Excel n'a pas de fonction simple pour ce test. *Écarté :* écrire tous les résultats en valeurs figées, impossibles à relire dans le fichier.
 
-**Détection à l'import, avec trois niveaux.** L'heure exacte et le texte de la réponse ne sont connus qu'à ce moment-là, et je ne veux stocker ni l'un ni l'autre. Le niveau `à vérifier` évite de décider seul quand il n'y a qu'un indice. *Écarté :* un simple oui / non (trop de vraies réponses rapides seraient retirées sans contrôle) ; stocker le texte des réponses pour les relire (donnée personnelle en plus, sans nécessité).
+**Analyse à l'import, avec un niveau « à vérifier ».** L'heure exacte et le texte des réponses ne sont connus que dans l'export, et je ne veux pas les stocker. Le niveau « à vérifier » évite de décider seul quand les indices se contredisent. *Écarté :* un simple oui / non (des erreurs invisibles) ; stocker le texte des réponses pour les relire (donnée personnelle en plus, sans nécessité).
 
-**Un peu de JavaScript, seulement pour Qualifier.** Enregistrer un clic sans recharger la page ne peut pas se faire en HTML seul. Le fichier `static/qualifier.js` est petit, sans bibliothèque ni compilation. Le serveur n'accepte que du JSON, sur une liste fermée de champs, et refuse les requêtes venant d'un autre site. *Écarté :* htmx ou React (une dépendance pour un seul écran) ; un formulaire par ligne (la page se recharge à chaque clic et on perd sa place dans la liste).
+**Corrections dans une table à part.** La table `corrections` dit quels champs ont été corrigés : l'analyse peut être relancée autant de fois que je veux sans perdre mon travail. *Écarté :* ne remplir que les champs vides (une règle améliorée ne s'appliquerait jamais).
+
+**Versions dans une table à part.** La correspondance texte → lettre est conservée, donc une lettre ne change pas si un message plus ancien apparaît plus tard. *Écarté :* recalculer les lettres à chaque analyse (A pourrait désigner un autre message d'un rapport à l'autre).
+
+**Un peu de JavaScript, seulement pour « À vérifier ».** Enregistrer un clic sans recharger la page ne peut pas se faire en HTML seul. Le fichier `static/a_verifier.js` est petit, sans bibliothèque ni compilation. Le serveur n'accepte que du JSON, sur une liste fermée de champs, et refuse les requêtes venant d'un autre site. *Écarté :* htmx ou React (une dépendance pour un seul écran) ; un formulaire par ligne (la page se recharge à chaque clic et on perd sa place dans la liste).
 
 **Tests avec pytest.** Chaque test
 
@@ -308,7 +322,10 @@ prospection/
 ├── exports.py        période et CSV anonymisé
 ├── exports_excel.py  fichier Excel avec graphiques
 ├── pages_exports.py  page « Exports » (téléchargements)
-├── pages_qualifier.py  écran « Qualifier » (un clic = un champ)
+├── analyse_messages.py  analyse automatique des messages (règles de mots)
+├── regles_messages.toml  listes de mots et délai (modifiable)
+├── analyser_cli.py   relance l'analyse sur la base (nombres seulement)
+├── pages_a_verifier.py  écran « À vérifier » (cas douteux, un clic)
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS

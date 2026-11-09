@@ -7,9 +7,10 @@ from collections import Counter
 from datetime import date, timedelta
 from math import ceil
 
-from modeles import VERSIONS
+from modeles import A_VERIFIER, VERSIONS_DE_BASE
 
 NON_RENSEIGNE = "Non renseigné"
+LIMITE_VERSIONS = 10  # versions détaillées ; les suivantes sont regroupées
 STATUTS_AVEC_REPONSE = ("a répondu", "intéressé", "signé")
 STATUTS_INTERESSES = ("intéressé", "signé")
 NIVEAUX_INTERESSES = ("curieux", "demande de prix")
@@ -69,6 +70,20 @@ def bilan(prospects):
     }
 
 
+def compter_categories(prospects):
+    """Bilan de la base. Un prospect peut compter dans plusieurs catégories."""
+    categories = [categorie_reponse(p) for p in prospects]
+    return {
+        "auto": categories.count("automatique"),
+        "vraies": categories.count("vraie"),
+        "interesses": sum(p["interet"] == "demande de prix" for p in prospects),
+        "curieux": sum(p["interet"] == "curieux" for p in prospects),
+        "pas_interesses": sum(c == "vraie" and p["interet"] == "aucun" for c, p in zip(categories, prospects)),
+        "a_verifier": sum(A_VERIFIER in (p["reponse_automatique"], p["interet"]) for p in prospects),
+        "sans_reponse": categories.count("aucune"),
+    }
+
+
 # --- Comparaisons ------------------------------------------------------------
 def _grouper(prospects, champ):
     """{valeur du champ: prospects} ; une valeur vide va dans « Non renseigné »."""
@@ -82,13 +97,28 @@ def _ligne(libelle, prospects):
     return {"libelle": libelle, **bilan(prospects)}
 
 
-def comparer_versions(prospects):
-    """Lignes A, B (toujours présentes), puis les prospects sans version s'il y en a."""
+def est_version(libelle):
+    """Vrai pour une vraie version (A, B, AA…), pas pour un regroupement."""
+    return libelle.isascii() and libelle.isupper() and libelle.isalpha() and len(libelle) <= 3
+
+
+def comparer_versions(prospects, limite=LIMITE_VERSIONS):
+    """Versions de la plus utilisée à la moins utilisée (A et B toujours présentes).
+
+    Au-delà de `limite`, les autres sont regroupées ; les prospects sans version
+    forment une dernière ligne.
+    """
     groupes = _grouper(prospects, "version_message")
-    lignes = [_ligne(version, groupes.get(version, [])) for version in VERSIONS]
-    if NON_RENSEIGNE in groupes:
-        lignes.append(_ligne(NON_RENSEIGNE, groupes[NON_RENSEIGNE]))
-    return lignes
+    sans_version = groupes.pop(NON_RENSEIGNE, None)
+    lignes = sorted((_ligne(v, groupes.get(v, [])) for v in set(groupes) | set(VERSIONS_DE_BASE)),
+                    key=lambda l: (-l["contacts"], len(l["libelle"]), l["libelle"]))
+    gardees, reste = lignes[:limite], [l for l in lignes[limite:] if l["contacts"]]
+    if reste:
+        regroupes = [p for l in reste for p in groupes[l["libelle"]]]
+        gardees.append(_ligne(f"Autres ({len(reste)} versions)", regroupes))
+    if sans_version:
+        gardees.append(_ligne(NON_RENSEIGNE, sans_version))
+    return gardees
 
 
 def comparer_canaux(prospects):

@@ -1,14 +1,24 @@
 """Règles sur les prospects : valeurs autorisées, validation, lecture/écriture."""
 
+import re
 from datetime import date
 
 # --- Valeurs autorisées (à modifier ici si besoin) ---------------------------
 STATUTS = ["contacté", "relancé", "a répondu", "intéressé", "signé", "perdu"]
-INTERETS = ["aucun", "curieux", "demande de prix"]
-VERSIONS = ["A", "B"]
+A_VERIFIER = "à vérifier"
+INTERETS = ["aucun", "curieux", "demande de prix", A_VERIFIER]
+VERSIONS_DE_BASE = ["A", "B"]  # toujours affichées, même sans contact
 CANAUX = ["Messenger", "Facebook (commentaire)", "Instagram", "E-mail",
           "Téléphone", "Sur place", "Autre"]
-REPONSES_AUTOMATIQUES = ["non", "oui", "à vérifier"]
+REPONSES_AUTOMATIQUES = ["non", "oui", A_VERIFIER]
+
+# Champs remplis par l'analyse automatique (liste fermée, utilisée en SQL).
+CHAMPS_ANALYSES = ("reponse_automatique", "interet", "version_message", "tarif_propose", "a_deja_site")
+# Choix proposés sur l'écran « À vérifier ».
+CORRECTIONS_POSSIBLES = {
+    "reponse_automatique": ["non", "oui"],
+    "interet": ["aucun", "curieux", "demande de prix"],
+}
 
 # Champs enregistrés tels quels dans la table prospects (hors code et id).
 COLONNES = [
@@ -33,6 +43,17 @@ def _choix(formulaire, champ, autorises, erreurs):
         erreurs[champ] = "Valeur non reconnue."
         return None
     return valeur
+
+
+def _version(formulaire, erreurs):
+    """Version du message : A, B… jusqu'à trois lettres (ou vide)."""
+    valeur = _texte(formulaire, "version_message")
+    if valeur is None:
+        return None
+    if not re.fullmatch(r"[A-Z]{1,3}", valeur.upper()):
+        erreurs["version_message"] = "Version non reconnue (une à trois lettres)."
+        return None
+    return valeur.upper()
 
 
 def _date(formulaire, champ, erreurs):
@@ -79,7 +100,7 @@ def valider(formulaire):
         "ville": _texte(formulaire, "ville"),
         "canal": _choix(formulaire, "canal", CANAUX, erreurs),
         "date_premier_message": _date(formulaire, "date_premier_message", erreurs),
-        "version_message": _choix(formulaire, "version_message", VERSIONS, erreurs),
+        "version_message": _version(formulaire, erreurs),
         "texte_envoye": _texte(formulaire, "texte_envoye"),
         "date_reponse": _date(formulaire, "date_reponse", erreurs),
         "interet": _choix(formulaire, "interet", INTERETS, erreurs) or "aucun",
@@ -130,7 +151,12 @@ def creer(conn, valeurs, conversation_fb=None, commit=True):
 
 
 def modifier(conn, code, valeurs):
-    """Met à jour un prospect existant."""
+    """Met à jour un prospect ; un champ d'analyse changé compte comme correction."""
+    ancien = obtenir(conn, code)
+    if ancien is not None and ancien["conversation_fb"]:
+        for champ in CHAMPS_ANALYSES:
+            if ancien[champ] != valeurs[champ]:
+                marquer_correction(conn, ancien["id"], champ)
     affectations = ", ".join(f"{c} = ?" for c in COLONNES)
     conn.execute(
         f"UPDATE prospects SET {affectations} WHERE code = ?",
@@ -139,48 +165,47 @@ def modifier(conn, code, valeurs):
     conn.commit()
 
 
-# --- Qualification rapide : un seul champ à la fois ---------------------------
-# Liste fermée : le nom de colonne envoyé en SQL ne vient jamais du navigateur.
-CHAMPS_RAPIDES = {
-    "interet": lambda f, e: _choix(f, "interet", INTERETS, e),
-    "version_message": lambda f, e: _choix(f, "version_message", VERSIONS, e),
-    "reponse_automatique": lambda f, e: _choix(f, "reponse_automatique", REPONSES_AUTOMATIQUES, e),
-    "tarif_propose": lambda f, e: _euros(f, "tarif_propose", e),
-    "acompte": lambda f, e: _euros(f, "acompte", e),
-}
-CHAMPS_OBLIGATOIRES = ("interet", "reponse_automatique")
-STATUT_SI_NON_SIGNE = "a répondu"
-ERREUR_CHAMP = "Champ ou valeur non reconnu."
+# --- Analyse automatique et corrections à la main -----------------------------
+def correction_valide(champ, valeur):
+    """Vrai si ce choix est proposé sur l'écran « À vérifier »."""
+    return (isinstance(champ, str) and champ in CORRECTIONS_POSSIBLES
+            and isinstance(valeur, str) and valeur in CORRECTIONS_POSSIBLES[champ])
 
 
-def _champ_signe(valeur):
-    """Le bouton « Signé » écrit dans le statut."""
-    if valeur not in ("oui", "non"):
-        return None, ERREUR_CHAMP
-    return ("statut", "signé" if valeur == "oui" else STATUT_SI_NON_SIGNE), None
-
-
-def valider_champ(champ, valeur):
-    """Renvoie ((colonne, valeur propre), None) ou (None, erreur)."""
-    if not isinstance(champ, str) or isinstance(valeur, bool) or not isinstance(valeur, (str, int)):
-        return None, ERREUR_CHAMP
-    if champ == "signe":
-        return _champ_signe(valeur)
-    if champ not in CHAMPS_RAPIDES:
-        return None, ERREUR_CHAMP
-    erreurs = {}
-    propre = CHAMPS_RAPIDES[champ]({champ: str(valeur)}, erreurs)
-    if erreurs or (propre is None and champ in CHAMPS_OBLIGATOIRES):
-        return None, erreurs.get(champ, ERREUR_CHAMP)
-    return (champ, propre), None
-
-
-def mettre_a_jour_champ(conn, code, colonne, valeur):
-    """Enregistre un seul champ déjà validé par valider_champ."""
-    if colonne != "statut" and colonne not in CHAMPS_RAPIDES:
+def _verifier_champ_analyse(colonne):
+    """Le nom de colonne envoyé en SQL ne vient jamais de l'extérieur."""
+    if colonne not in CHAMPS_ANALYSES:
         raise ValueError("Colonne non autorisée.")
-    conn.execute(f"UPDATE prospects SET {colonne} = ? WHERE code = ?", (valeur, code))
+
+
+def ecrire_champ_analyse(conn, prospect_id, colonne, valeur):
+    """Écrit un résultat de l'analyse (sans valider la transaction)."""
+    _verifier_champ_analyse(colonne)
+    conn.execute(f"UPDATE prospects SET {colonne} = ? WHERE id = ?", (valeur, prospect_id))
+
+
+def marquer_correction(conn, prospect_id, champ):
+    """Note qu'un champ a été corrigé à la main (sans valider la transaction)."""
+    _verifier_champ_analyse(champ)
+    conn.execute("INSERT OR REPLACE INTO corrections (prospect_id, champ) VALUES (?, ?)", (prospect_id, champ))
+
+
+def corriger(conn, prospect_id, champ, valeur):
+    """Applique une correction : elle ne sera plus remplacée par l'analyse."""
+    ecrire_champ_analyse(conn, prospect_id, champ, valeur)
+    marquer_correction(conn, prospect_id, champ)
     conn.commit()
+
+
+def champs_corriges(conn, prospect_id):
+    """Champs de ce prospect corrigés à la main."""
+    lignes = conn.execute("SELECT champ FROM corrections WHERE prospect_id = ?", (prospect_id,))
+    return {l["champ"] for l in lignes}
+
+
+def nombre_corrections(conn):
+    """Nombre total de champs corrigés à la main."""
+    return conn.execute("SELECT COUNT(*) FROM corrections").fetchone()[0]
 
 
 def obtenir(conn, code):

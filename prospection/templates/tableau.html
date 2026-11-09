@@ -117,9 +117,9 @@
   <p class="note">{{ nb_sans_date }} prospect(s) sans date ne sont pas dans ce graphique.</p>
 {% endif %}
 
-<h2>Version A / B du message</h2>
+<h2>Versions du message</h2>
 {% if not nb_version_renseignee %}
-  <p class="note">Aucune version renseignée : la comparaison sera possible une fois les versions complétées dans les fiches.</p>
+  <p class="note">Aucune version renseignée : lance l'analyse automatique (<code>python analyser_cli.py</code>).</p>
 {% else %}
   <p class="note">Simple comparaison des chiffres : un écart ne prouve rien à lui seul. Le test est sur la page <a href="{{ url_for('tableau_bord.page_analyse') }}">Analyse</a>.</p>
 {% endif %}

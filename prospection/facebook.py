@@ -6,7 +6,6 @@ aucune connexion à Facebook. Ce module ne touche pas à la base de données.
 
 import json
 import re
-import unicodedata
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -23,12 +22,6 @@ TYPES_DOSSIERS = ("inbox", "archived_threads", "message_requests", "filtered_thr
 # mon message précédent. 0 = tous mes messages sans réponse comptent comme relances.
 # Mettre par ex. 12 pour ignorer les messages envoyés d'affilée le même jour.
 DELAI_MIN_RELANCE_HEURES = 0
-
-# Une réponse arrivée moins vite que ce délai après mon message est suspecte.
-DELAI_REPONSE_AUTO_SECONDES = 120
-# Formules types des réponses automatiques (comparées sans accents ni majuscules).
-FORMULES_AUTO = ("merci pour votre message", "nous vous répondrons", "notre équipe",
-                 "réponse automatique", "horaires")
 
 
 # --- Encodage cassé de Facebook ----------------------------------------------
@@ -160,35 +153,6 @@ def _relances(messages_apres_le_premier, premier):
     return relances
 
 
-# --- Réponses automatiques (le texte est lu ici, jamais enregistré) -----------
-def _normaliser(texte):
-    """Minuscules et sans accents, pour comparer les formules."""
-    decompose = unicodedata.normalize("NFD", texte.casefold())
-    return "".join(c for c in decompose if not unicodedata.combining(c))
-
-
-def _nb_signaux(message, messages, mon_nom):
-    """Signaux de réponse automatique d'un message : délai court, formule type (0 à 2)."""
-    horodatage, _, texte = message
-    mon_precedent = max(m[0] for m in messages if m[1] == mon_nom and m[0] < horodatage)
-    rapide = horodatage - mon_precedent < DELAI_REPONSE_AUTO_SECONDES * 1000
-    contenu = _normaliser(texte or "")
-    return int(rapide) + int(any(_normaliser(f) in contenu for f in FORMULES_AUTO))
-
-
-def detecter_reponse_automatique(messages, mon_nom, premier):
-    """« oui » (2 signaux), « à vérifier » (1 signal) ou « non » (aucun).
-
-    Si la première réponse est suspecte mais qu'un message suivant de l'autre
-    personne n'a aucun signal, quelqu'un a écrit à la main : on répond « non ».
-    """
-    reponses = [m for m in messages if m[1] != mon_nom and m[0] > premier[0]]
-    signaux = _nb_signaux(reponses[0], messages, mon_nom)
-    if not signaux or any(not _nb_signaux(m, messages, mon_nom) for m in reponses[1:]):
-        return "non"
-    return "oui" if signaux == 2 else "à vérifier"
-
-
 def analyser(conversation, mon_nom):
     """Renvoie (prospect, None) ou (None, raison) si la conversation est ignorée.
 
@@ -215,8 +179,7 @@ def analyser(conversation, mon_nom):
         "date_premier_message": _date(premier[0]),
         "texte_envoye": premier[2],
         "date_reponse": _date(reponse[0]) if reponse else None,
-        "reponse_automatique": (detecter_reponse_automatique(conversation["messages"], mon_nom, premier)
-                                if reponse else None),
+        "horodatage_premier": premier[0],  # sert à numéroter les versions dans l'ordre
         "relances": relances,
         "statut": "a répondu" if reponse else ("relancé" if relances else "contacté"),
     }, None

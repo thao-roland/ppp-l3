@@ -117,6 +117,7 @@ par_relance_sans_reponse = -5
 aucun = 0
 curieux = 10
 "demande de prix" = 30
+"à vérifier" = 0
 [points.site]
 sans_site = 10
 inconnu = 5

@@ -1,12 +1,11 @@
-"""Import d'un export Facebook dans la base (crée prospects et relances)."""
+"""Import d'un export Facebook et analyse automatique des conversations."""
 
 from pathlib import Path
 
+import analyse_messages
 import facebook
 import modeles
-
-
-CLES_DETECTION = {"non": "auto_non", "oui": "auto_oui", "à vérifier": "auto_a_verifier"}
+import tableau
 
 
 class ErreurImport(Exception):
@@ -43,16 +42,16 @@ def _deja_importee(conn, cle):
     return ligne.fetchone() is not None
 
 
-def _enregistrer(conn, prospect):
-    """Ajoute le prospect et ses relances (sans valider : voir importer)."""
+def _enregistrer(conn, prospect, resultat):
+    """Ajoute le prospect et ses relances (sans valider : voir _traiter)."""
     valeurs = dict.fromkeys(modeles.COLONNES)
     valeurs.update(
         nom_entreprise=prospect["nom_entreprise"], canal="Messenger",
         date_premier_message=prospect["date_premier_message"],
         texte_envoye=prospect["texte_envoye"], date_reponse=prospect["date_reponse"],
-        statut=prospect["statut"], interet="aucun",
+        statut=prospect["statut"],
         dates_estimees=0,  # dates exactes, venues de Facebook
-        reponse_automatique=prospect["reponse_automatique"],
+        **resultat,
     )
     code = modeles.creer(conn, valeurs, conversation_fb=prospect["cle"], commit=False)
     prospect_id = modeles.obtenir(conn, code)["id"]
@@ -61,60 +60,113 @@ def _enregistrer(conn, prospect):
     return code
 
 
-def _completer_detection(conn, prospect):
-    """Remplit la détection d'un prospect déjà importé, si elle est encore vide.
+def _appliquer(conn, cle, resultat):
+    """Met à jour une fiche déjà importée, sans toucher aux champs corrigés à la main.
 
-    Une valeur déjà présente (donc une correction à la main) n'est jamais remplacée.
-    Renvoie 1 si la fiche a été complétée, sinon 0.
+    Renvoie 1 si la fiche a changé, sinon 0.
     """
-    if prospect["reponse_automatique"] is None:
-        return 0
-    return conn.execute(
-        "UPDATE prospects SET reponse_automatique = ? "
-        "WHERE conversation_fb = ? AND reponse_automatique IS NULL AND date_reponse IS NOT NULL",
-        (prospect["reponse_automatique"], prospect["cle"])).rowcount
+    ligne = conn.execute("SELECT * FROM prospects WHERE conversation_fb = ?", (cle,)).fetchone()
+    corriges = modeles.champs_corriges(conn, ligne["id"])
+    changements = {c: v for c, v in resultat.items() if c not in corriges and ligne[c] != v}
+    for colonne, valeur in changements.items():
+        modeles.ecrire_champ_analyse(conn, ligne["id"], colonne, valeur)
+    return int(bool(changements))
 
 
-def _compter_detection(rapport, prospect):
-    """Ajoute au rapport le résultat de la détection, sans aucun texte."""
-    cle = CLES_DETECTION.get(prospect["reponse_automatique"])
-    if cle:
-        rapport[cle] += 1
+def _versions(conn, prospects):
+    """{clé de conversation: version}, selon le texte exact de mon premier message.
 
-
-def importer(conn, dossier_export, mon_nom=None, simuler=False):
-    """Importe un export. Tout est enregistré d'un coup, ou rien en cas d'erreur.
-
-    simuler=True : fait tous les calculs mais n'enregistre rien (pour voir les nombres).
-    Renvoie un rapport (des nombres et des codes P00X, jamais de noms).
+    Un texte nouveau reçoit la lettre suivante, dans l'ordre chronologique.
+    La correspondance est conservée : une lettre ne change pas d'une analyse à l'autre.
     """
+    connues = {l["texte"]: l["code"] for l in conn.execute("SELECT texte, code FROM versions_message")}
+    versions = {}
+    for prospect in sorted(prospects, key=lambda p: p["horodatage_premier"]):
+        texte = prospect["texte_envoye"]
+        if texte is None:
+            continue
+        if texte not in connues:
+            connues[texte] = analyse_messages.code_version(len(connues))
+            conn.execute("INSERT INTO versions_message (texte, code) VALUES (?, ?)", (texte, connues[texte]))
+        versions[prospect["cle"]] = connues[texte]
+    return versions
+
+
+def _preparer(dossier_export, mon_nom):
+    """Lit l'export. Renvoie (dossiers, conversations, illisibles, mon nom, règles)."""
     dossiers = facebook.trouver_conversations(dossier_export)
     conversations, illisibles = _lire_toutes(dossiers)
     if not conversations:
         raise ErreurImport("Aucune conversation lisible dans ce dossier "
                            "(je cherche un dossier messages/inbox).")
-    nom = _choisir_mon_nom(conversations, mon_nom)
-
-    rapport = {"conversations": len(dossiers), "nouveaux": [], "deja_importees": 0,
-               "groupes": 0, "sans_message_de_moi": 0, "illisibles": illisibles,
-               "relances": 0, "reponses": 0, "simulation": simuler,
-               "auto_non": 0, "auto_oui": 0, "auto_a_verifier": 0, "detections_completees": 0}
     try:
-        for conversation in conversations:
-            prospect, raison = facebook.analyser(conversation, nom)
-            if prospect is None:
-                rapport[raison] += 1
-                continue
-            _compter_detection(rapport, prospect)
+        regles = analyse_messages.charger_regles()
+    except analyse_messages.ErreurRegles as erreur:
+        raise ErreurImport(str(erreur)) from erreur
+    return dossiers, conversations, illisibles, _choisir_mon_nom(conversations, mon_nom), regles
+
+
+def _trier(conn, conversations, nom, creer, rapport):
+    """Garde les conversations à traiter : [(conversation, prospect)]."""
+    a_traiter = []
+    for conversation in conversations:
+        prospect, raison = facebook.analyser(conversation, nom)
+        if prospect is None:
+            rapport[raison] += 1
+        elif creer or _deja_importee(conn, prospect["cle"]):
+            a_traiter.append((conversation, prospect))
+        else:
+            rapport["sans_fiche"] += 1
+    return a_traiter
+
+
+def _traiter(conn, conversations, nom, regles, rapport, creer):
+    """Analyse et enregistre. Tout est validé d'un coup, ou rien en cas d'erreur."""
+    try:
+        a_traiter = _trier(conn, conversations, nom, creer, rapport)
+        versions = _versions(conn, [p for _, p in a_traiter])
+        for conversation, prospect in a_traiter:
+            resultat = {**analyse_messages.analyser(conversation, nom, regles),
+                        "version_message": versions.get(prospect["cle"])}
             if _deja_importee(conn, prospect["cle"]):
                 rapport["deja_importees"] += 1
-                rapport["detections_completees"] += _completer_detection(conn, prospect)
+                rapport["fiches_mises_a_jour"] += _appliquer(conn, prospect["cle"], resultat)
             else:
-                rapport["nouveaux"].append(_enregistrer(conn, prospect))
+                rapport["nouveaux"].append(_enregistrer(conn, prospect, resultat))
                 rapport["relances"] += len(prospect["relances"])
                 rapport["reponses"] += 1 if prospect["date_reponse"] else 0
-        conn.rollback() if simuler else conn.commit()
+        rapport["categories"] = tableau.compter_categories(modeles.lister(conn))
+        rapport["versions"] = conn.execute("SELECT COUNT(*) FROM versions_message").fetchone()[0]
+        conn.rollback() if rapport["simulation"] else conn.commit()
     except Exception:
         conn.rollback()
         raise
     return rapport
+
+
+def _rapport_vide(dossiers, illisibles, simuler):
+    return {"conversations": len(dossiers), "nouveaux": [], "deja_importees": 0,
+            "groupes": 0, "sans_message_de_moi": 0, "illisibles": illisibles,
+            "relances": 0, "reponses": 0, "simulation": simuler,
+            "fiches_mises_a_jour": 0, "sans_fiche": 0}
+
+
+def importer(conn, dossier_export, mon_nom=None, simuler=False):
+    """Importe un export et analyse ses conversations.
+
+    simuler=True : fait tous les calculs mais n'enregistre rien.
+    Renvoie un rapport (des nombres et des codes P00X, jamais de noms).
+    """
+    dossiers, conversations, illisibles, nom, regles = _preparer(dossier_export, mon_nom)
+    rapport = _rapport_vide(dossiers, illisibles, simuler)
+    return _traiter(conn, conversations, nom, regles, rapport, creer=True)
+
+
+def analyser_base(conn, dossier_export, mon_nom=None, simuler=False):
+    """Relance l'analyse sur les fiches existantes, sans créer de prospect.
+
+    Le texte des réponses n'étant jamais stocké, il est relu dans l'export.
+    """
+    dossiers, conversations, illisibles, nom, regles = _preparer(dossier_export, mon_nom)
+    rapport = _rapport_vide(dossiers, illisibles, simuler)
+    return _traiter(conn, conversations, nom, regles, rapport, creer=False)

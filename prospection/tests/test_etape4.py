@@ -83,7 +83,7 @@ def test_versions_a_et_b_toujours_presentes():
 def test_versions_comptees_separement():
     groupe = [prospect(version_message="A", date_reponse="2026-10-06"),
               prospect(version_message="B"), prospect(version_message="B")]
-    a, b = tableau.comparer_versions(groupe)
+    b, a = tableau.comparer_versions(groupe)  # la plus utilisée d'abord
     assert (a["contacts"], a["taux_reponse"]) == (1, 100.0)
     assert (b["contacts"], b["taux_reponse"]) == (2, 0.0)
 

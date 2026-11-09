@@ -162,7 +162,7 @@ def _lignes_resume(total, stats, chiffres, debut, fin):
         ("Taux d'intérêt", _v_taux(inter, nb), _f_taux(i, n), "taux_gauche"),
         ("Signés", sig, None, "nombre_gauche"),
         ("Taux de signature", _v_taux(sig, nb), _f_taux(s, n), "taux_gauche"),
-        ("Comparaison A/B", stats["conclusion_ab"]["texte"], None, "long"),
+        ("Comparaison des deux versions les plus utilisées", stats["conclusion_ab"]["texte"], None, "long"),
         ("Test exact de Fisher, valeur p (calculée par l'outil)", "—" if p is None else p, None, "p"),
         ("Minimum de contacts par groupe pour conclure", analyse.MIN_CONTACTS_PAR_GROUPE, None, "nombre_gauche"),
         ("Prospects aux dates estimées", chiffres["nb_dates_estimees"], None, "nombre_gauche"),
@@ -196,7 +196,8 @@ def _feuille_versions(fichier, feuille, f, chiffres, stats):
     _table(feuille, f, "Version", lignes)
     feuille.write_string(len(lignes) + 2, 0, stats["conclusion_ab"]["texte"], f["gras"])
     if chiffres["nb_version_renseignee"]:
-        _barres(fichier, feuille, "Taux de vraies réponses par version", "Taux de réponse", 2,
+        nb_versions = sum(tableau.est_version(l["libelle"]) for l in lignes)
+        _barres(fichier, feuille, "Taux de vraies réponses par version", "Taux de réponse", nb_versions,
                 [(COL_TAUX, BLEU)], en_pourcent=True)
 
 

@@ -34,3 +34,17 @@ CREATE TABLE IF NOT EXISTS relances (
 );
 
 CREATE INDEX IF NOT EXISTS idx_relances_prospect ON relances(prospect_id);
+
+-- Une version par texte exact de mon premier message : A, B, C…
+CREATE TABLE IF NOT EXISTS versions_message (
+    texte  TEXT PRIMARY KEY,
+    code   TEXT NOT NULL UNIQUE
+);
+
+-- Champs corrigés à la main : l'analyse automatique ne les remplace plus.
+CREATE TABLE IF NOT EXISTS corrections (
+    prospect_id  INTEGER NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+    champ        TEXT NOT NULL,
+    corrige_le   TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (prospect_id, champ)
+);
