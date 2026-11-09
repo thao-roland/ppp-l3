@@ -19,6 +19,7 @@ def il_y_a(jours):
 def prospect(**changements):
     """Prospect fictif ancien, sans réponse, score de base 10 (site inconnu)."""
     valeurs = {"id": 1, "statut": "contacté", "interet": "aucun", "a_deja_site": None,
+               "reponse_automatique": None,
                "date_premier_message": il_y_a(60), "date_reponse": None}
     valeurs.update(changements)
     return valeurs

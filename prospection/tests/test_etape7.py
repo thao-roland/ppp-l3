@@ -5,7 +5,7 @@ Tous les noms et messages sont inventés.
 
 import io
 import json
-import sqlite3
+from datetime import date, timedelta
 
 import pytest
 from openpyxl import load_workbook
@@ -18,6 +18,7 @@ import facebook
 import importation
 import modeles
 import pages_qualifier
+import scoring
 import tableau
 from conftest import formulaire_valide
 
@@ -241,6 +242,85 @@ def test_fiche_refuse_une_valeur_inconnue(client):
     client.post("/prospects/nouveau", data=formulaire_valide())
     assert client.post("/prospects/P001/modifier", data=formulaire_valide(
         reponse_automatique="peut-être")).status_code == 400
+
+
+# --- Score et relances : une réponse automatique n'est pas une réponse ----------
+JOUR = date(2026, 11, 8)
+
+
+def il_y_a(jours):
+    return (JOUR - timedelta(days=jours)).isoformat()
+
+
+def ancien(**changements):
+    """Prospect dont tous les échanges sont anciens : score de base 10 (site inconnu)."""
+    return prospect(date_premier_message=il_y_a(60), date_reponse=il_y_a(50), **changements)
+
+
+@pytest.fixture
+def regles():
+    return scoring.charger_regles()
+
+
+def score_de(regles, fiche_prospect, relances=()):
+    return scoring.calculer_score(fiche_prospect, list(relances), regles, JOUR)
+
+
+@pytest.mark.parametrize("marque, attendu", [(None, 40), ("non", 40), ("oui", 10), ("à vérifier", 10)])
+def test_points_de_reponse_selon_la_detection(regles, marque, attendu):
+    assert score_de(regles, ancien(reponse_automatique=marque)) == attendu
+
+
+def test_interesse_garde_ses_points_meme_si_automatique(regles):
+    assert score_de(regles, ancien(reponse_automatique="oui", interet="curieux")) == 60
+
+
+def test_une_reponse_automatique_recente_ne_donne_pas_le_bonus(regles):
+    automatique = prospect(date_premier_message=il_y_a(60), date_reponse=il_y_a(3), reponse_automatique="oui")
+    vraie = prospect(date_premier_message=il_y_a(60), date_reponse=il_y_a(3), reponse_automatique="non")
+    assert (score_de(regles, automatique), score_de(regles, vraie)) == (10, 50)
+
+
+def test_relance_avant_une_reponse_automatique_reste_sans_reponse(regles):
+    assert score_de(regles, ancien(reponse_automatique="oui"), [il_y_a(55)]) == 5
+
+
+def test_relance_avant_une_vraie_reponse_sans_malus(regles):
+    assert score_de(regles, ancien(reponse_automatique="non"), [il_y_a(55)]) == 40
+
+
+def a_relancer(regles, fiche_prospect, relances=()):
+    return scoring.a_relancer([fiche_prospect], {1: list(relances)}, regles, JOUR)
+
+
+@pytest.mark.parametrize("marque, nombre", [("oui", 1), ("à vérifier", 1), ("non", 0), (None, 0)])
+def test_liste_des_relances_selon_la_detection(regles, marque, nombre):
+    assert len(a_relancer(regles, ancien(reponse_automatique=marque))) == nombre
+
+
+def test_attente_comptee_depuis_mon_message_pas_la_reponse_automatique(regles):
+    ligne = a_relancer(regles, ancien(reponse_automatique="oui"))[0]
+    assert ligne["jours_sans_reponse"] == 60
+
+
+def test_interesse_apres_reponse_automatique_pas_a_relancer(regles):
+    assert a_relancer(regles, ancien(reponse_automatique="oui", interet="curieux")) == []
+
+
+def test_on_arrete_apres_2_relances_meme_avec_reponse_automatique(regles):
+    fiche_auto = ancien(reponse_automatique="oui")
+    assert a_relancer(regles, fiche_auto, [il_y_a(55), il_y_a(45)]) == []
+
+
+def test_correction_a_la_main_remet_les_points(client, conn):
+    client.post("/prospects/nouveau", data=formulaire_valide(date_reponse="2026-10-03"))
+    modeles.mettre_a_jour_champ(conn, "P001", "reponse_automatique", "oui")
+    regles_actuelles = scoring.charger_regles()
+    avant = scoring.noter(modeles.lister(conn), {}, regles_actuelles, JOUR)[0]["score"]
+    client.post("/qualifier/P001", json={"champ": "reponse_automatique", "valeur": "non"})
+    conn.commit()
+    apres = scoring.noter(modeles.lister(conn), {}, regles_actuelles, JOUR)[0]["score"]
+    assert apres - avant == 30
 
 
 # --- Écran Qualifier ------------------------------------------------------------

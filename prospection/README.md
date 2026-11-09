@@ -104,14 +104,15 @@ La page d'accueil affiche un **score sur 100** et classe les prospects du plus p
 
 | Critère | Points |
 | --- | --- |
-| A répondu | +30 |
+| A répondu pour de vrai (ni automatique, ni à vérifier) | +30 |
 | Intérêt : aucun / curieux / demande de prix | 0 / +20 / +40 |
 | Pas de site / inconnu / a déjà un site | +20 / +10 / 0 |
 | Dernier échange il y a moins de 14 jours | +10 |
 | Chaque relance restée sans réponse | −5 |
 
 - Le score reste entre 0 et 100. Un prospect **signé ou perdu** n'a pas de score (« — ») et n'est jamais à relancer.
-- Une relance est « sans réponse » s'il n'y a aucune réponse, ou si elle est **postérieure** à la réponse. Une relance du même jour que la réponse compte comme ayant reçu une réponse, car on ne connaît que les dates, pas les heures.
+- Une réponse automatique ou à vérifier ne compte pas : elle ne donne ni les points de réponse, ni le bonus « récent », et le prospect reste à relancer. Un prospect marqué intéressé compte toujours comme ayant répondu.
+- Une relance est « sans réponse » s'il n'y a aucune vraie réponse, ou si elle est **postérieure** à la réponse. Une relance du même jour que la réponse compte comme ayant reçu une réponse, car on ne connaît que les dates, pas les heures.
 - **À relancer** : mon dernier message date d'au moins **7 jours**, personne n'y a répondu, et il y a moins de **2 relances** sans réponse. La liste va du meilleur score au moins bon, puis de l'attente la plus longue à la plus courte.
 
 **Limites à garder en tête :**
@@ -206,7 +207,7 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 - **Faux négatifs** : une réponse automatique programmée plus tard, ou formulée autrement, passe pour une vraie réponse.
 - **Les seuils sont des choix** : ni les 2 minutes ni la liste de formules n'ont été mesurés sur un échantillon relu à la main. Le résultat est une estimation.
 - Tant que les réponses `à vérifier` ne sont pas corrigées, elles sont hors du taux, qui peut être sous-estimé.
-- Le score et la liste des relances n'utilisent pas cette détection : ils voient toujours la date de réponse.
+- À l'import, les relances s'arrêtent à la première réponse, même automatique : mes messages envoyés après une réponse automatique ne sont donc pas enregistrés comme relances. Un prospect peut ainsi paraître à relancer alors que je l'ai déjà recontacté.
 
 ## Écran « Qualifier » (étape 7)
 

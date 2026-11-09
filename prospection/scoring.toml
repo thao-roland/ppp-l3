@@ -7,6 +7,7 @@
 statuts_hors_score = ["signé", "perdu"]
 
 [points]
+# Une réponse automatique ou encore à vérifier ne donne pas ces points.
 a_repondu = 30
 echange_recent = 10
 # Retiré pour chaque relance restée sans réponse (le score ne descend pas sous 0).

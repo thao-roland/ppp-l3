@@ -8,6 +8,7 @@ import tomllib
 from datetime import date, datetime
 from pathlib import Path
 
+import tableau
 from facebook import FUSEAU
 from modeles import INTERETS
 
@@ -62,15 +63,20 @@ def _jours_depuis(jour_iso, jour):
     return (jour - date.fromisoformat(jour_iso)).days
 
 
+def _date_vraie_reponse(prospect):
+    """Date de réponse, ou None si la réponse est automatique ou encore à vérifier."""
+    return prospect["date_reponse"] if tableau.a_repondu(prospect) else None
+
+
 def relances_sans_reponse(prospect, dates_relances):
-    """Relances non suivies d'une réponse : toutes, ou celles après la réponse."""
-    reponse = prospect["date_reponse"]
+    """Relances non suivies d'une vraie réponse : toutes, ou celles après la réponse."""
+    reponse = _date_vraie_reponse(prospect)
     return [d for d in dates_relances if not reponse or d > reponse]
 
 
 def _dernier_echange(prospect, dates_relances):
     """Date la plus récente connue, ou None si le prospect n'a aucune date."""
-    dates = [prospect["date_premier_message"], prospect["date_reponse"], *dates_relances]
+    dates = [prospect["date_premier_message"], _date_vraie_reponse(prospect), *dates_relances]
     return max((d for d in dates if d), default=None)
 
 
@@ -94,7 +100,7 @@ def calculer_score(prospect, dates_relances, regles, jour):
     points = regles["points"]
     total = points["interet"].get(prospect["interet"], 0)
     total += _points_site(prospect["a_deja_site"], points["site"])
-    if prospect["date_reponse"]:
+    if _date_vraie_reponse(prospect):
         total += points["a_repondu"]
     if _est_recent(prospect, dates_relances, regles, jour):
         total += points["echange_recent"]
@@ -119,8 +125,8 @@ def _jours_a_relancer(prospect, dates_relances, regles, jour):
     if prospect["statut"] in regles["statuts_hors_score"] or not prospect["date_premier_message"]:
         return None
     sans_reponse = relances_sans_reponse(prospect, dates_relances)
-    if prospect["date_reponse"] and not sans_reponse:
-        return None  # il a répondu à mon dernier message
+    if _date_vraie_reponse(prospect) and not sans_reponse:
+        return None  # une vraie réponse à mon dernier message
     if len(sans_reponse) >= regles["relances"]["max_sans_reponse"]:
         return None
     jours = _jours_depuis(max([prospect["date_premier_message"], *dates_relances]), jour)
