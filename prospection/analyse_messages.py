@@ -44,10 +44,14 @@ def charger_regles(chemin=None):
         raise ErreurRegles("Le fichier regles_messages.toml est illisible.") from erreur
     try:
         actif = brut["reponses_automatiques"].get("actif", True)
-        if not isinstance(actif, bool):
+        devinette = brut.get("devinette", {})
+        deviner = devinette.get("actif", False)
+        if not isinstance(actif, bool) or not isinstance(deviner, bool):
             raise TypeError("actif doit valoir true ou false")
         return {
             "auto_actif": actif,
+            "deviner": deviner,
+            "messages_pour_curieux": int(devinette.get("messages_pour_curieux", 3)),
             "delai_ms": int(brut["reponses_automatiques"]["delai_secondes"]) * 1000,
             "formules": _motifs(brut["reponses_automatiques"]["formules"]),
             "prix": _motifs(brut["interet"]["prix"]),
@@ -96,20 +100,45 @@ def _reponse_automatique(reponses):
     return "oui"
 
 
-def _interet(automatique, humaines):
-    """Intérêt d'après les réponses sans formule automatique."""
-    if automatique == "oui":
-        return "aucun"
+def _interet_net(humaines):
+    """Intérêt quand les mots sont sans ambiguïté, sinon None."""
     prix = any(r["prix"] for r in humaines)
     curieux = any(r["curieux"] or r["question"] for r in humaines)
     refus = any(r["refus"] for r in humaines)
     if refus and (prix or curieux):
-        return A_VERIFIER
+        return None
     if prix:
         return "demande de prix"
     if curieux:
         return "curieux"
-    return "aucun" if refus else A_VERIFIER
+    return "aucun" if refus else None
+
+
+def _signal(reponse):
+    """Ce qu'une seule réponse laisse penser, ou None. Un refus l'emporte."""
+    if reponse["refus"]:
+        return "aucun"
+    if reponse["prix"]:
+        return "demande de prix"
+    return "curieux" if reponse["curieux"] or reponse["question"] else None
+
+
+def _deviner(humaines, regles):
+    """Estimation : le dernier signal décide, sinon le nombre de messages."""
+    for reponse in reversed(humaines):
+        if _signal(reponse):
+            return _signal(reponse)
+    return "curieux" if len(humaines) >= regles["messages_pour_curieux"] else "aucun"
+
+
+def _interet(automatique, humaines, regles):
+    """Intérêt d'après les réponses sans formule automatique."""
+    if automatique == "oui":
+        return "aucun"
+    net = _interet_net(humaines)
+    if net:
+        return net
+    return _deviner(humaines, regles) if regles["deviner"] else A_VERIFIER
 
 
 def _montant(texte):
@@ -143,7 +172,7 @@ def analyser(conversation, mon_nom, regles):
     reponses = [_lire_reponse(m, messages, mon_nom, regles) for m in brutes]
     automatique = _reponse_automatique(reponses)
     humaines = [r for r in reponses if not r["formule"]]
-    interet = _interet(automatique, humaines)
+    interet = _interet(automatique, humaines, regles)
     return {
         "reponse_automatique": automatique, "interet": interet,
         "tarif_propose": _tarif(interet, humaines, messages, mon_nom),

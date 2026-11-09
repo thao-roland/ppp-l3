@@ -24,14 +24,16 @@ AUTRE = "Entreprise Inventée"
 T0 = 1_780_000_000_000
 MINUTE = 60_000
 TEXTE_SECRET = "Phrase totalement inventée pour le test"
-REGLES = {**analyse_messages.charger_regles(), "auto_actif": True}
+REGLAGES_DE_TEST = {"auto_actif": True, "deviner": False}
+REGLES = {**analyse_messages.charger_regles(), **REGLAGES_DE_TEST}
 CHARGER_VRAI = analyse_messages.charger_regles
 
 
 @pytest.fixture(autouse=True)
 def detection_active(monkeypatch):
-    """Ces tests vérifient la détection : on l'active, quel que soit le réglage du fichier."""
-    monkeypatch.setattr(analyse_messages, "charger_regles", lambda chemin=None: {**CHARGER_VRAI(chemin), "auto_actif": True})
+    """Ces tests vérifient chaque règle : détection active, sans devinette, quel que soit le fichier."""
+    monkeypatch.setattr(analyse_messages, "charger_regles",
+                        lambda chemin=None: {**CHARGER_VRAI(chemin), **REGLAGES_DE_TEST})
 
 
 def mien(minutes, texte="Bonjour, je crée des sites"):
@@ -171,6 +173,63 @@ def test_seulement_automatique_interet_aucun():
 
 def test_les_mots_d_une_formule_automatique_ne_comptent_pas():
     assert resultat(mien(0), autre(60, "Notre équipe prépare un devis"))["interet"] == "à vérifier"
+
+
+# --- Devinette : l'outil tranche toujours ---------------------------------------
+def devine(*messages):
+    conversation = {"cle": "111", "participants": [MOI, AUTRE], "messages": list(messages)}
+    return analyse_messages.analyser(conversation, MOI, {**REGLES, "deviner": True})
+
+
+def test_le_fichier_livre_active_la_devinette():
+    assert CHARGER_VRAI()["deviner"] is True
+
+
+@pytest.mark.parametrize("textes, attendu", [
+    (["Non merci", "Finalement combien"], "demande de prix"),
+    (["Combien", "Finalement non merci"], "aucun"),
+    (["Non merci", "Pourquoi pas plus tard"], "curieux"),
+    (["Pourquoi pas", "Bonjour", "Merci"], "curieux"),
+])
+def test_le_dernier_signal_decide(textes, attendu):
+    messages = [mien(0)] + [autre(60 * (i + 1), t) for i, t in enumerate(textes)]
+    assert devine(*messages)["interet"] == attendu
+
+
+def test_un_refus_l_emporte_dans_le_meme_message():
+    assert devine(mien(0), autre(60, "Non merci, mais combien"))["interet"] == "aucun"
+
+
+@pytest.mark.parametrize("nombre, attendu", [(1, "aucun"), (2, "aucun"), (3, "curieux"), (6, "curieux")])
+def test_sans_mot_reconnu_le_nombre_de_messages_decide(nombre, attendu):
+    messages = [mien(0)] + [autre(60 * (i + 1), "Bonjour") for i in range(nombre)]
+    assert devine(*messages)["interet"] == attendu
+
+
+def test_message_sans_texte_devine_aucun():
+    assert devine(mien(0), autre(60, None))["interet"] == "aucun"
+
+
+def test_jamais_a_verifier_avec_la_devinette():
+    for texte in ("Ok", None, "Non merci, pourquoi pas", "Salut"):
+        assert devine(mien(0), autre(60, texte))["interet"] != "à vérifier"
+
+
+def test_sans_reponse_reste_aucun():
+    assert devine(mien(0))["interet"] == "aucun"
+
+
+def test_tarif_avec_une_demande_devinee():
+    assert devine(mien(0), autre(60, "Non merci"), autre(70, "Finalement combien"), mien(80, "450 €"))["tarif_propose"] == 450
+
+
+def test_devinette_absente_du_fichier_desactivee(tmp_path):
+    assert CHARGER_VRAI(regles_fichier(tmp_path, REGLES_MINIMALES))["deviner"] is False
+
+
+def test_devinette_doit_etre_vrai_ou_faux(tmp_path):
+    with pytest.raises(analyse_messages.ErreurRegles):
+        regles_depuis(tmp_path, REGLES_MINIMALES + '\n[devinette]\nactif = "oui"\n')
 
 
 # --- Tarif ----------------------------------------------------------------------

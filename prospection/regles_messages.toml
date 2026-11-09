@@ -36,6 +36,10 @@ curieux = [
   "volontiers",
   "d'accord",
   "oui",
+  "super",
+  "peut être",
+  "téléphone",
+  "numéro",
 ]
 # Refus : intérêt « aucun ».
 refus = [
@@ -46,7 +50,23 @@ refus = [
   "pas intéressés",
   "pas intéressées",
   "déjà un site",
+  "non",
+  "ça ira",
+  "pas pour le moment",
+  "pas pour l'instant",
+  "pas utile",
+  "désolé",
+  "désolée",
+  "merci mais",
 ]
+
+[devinette]
+# true : l'outil tranche toujours, il ne laisse aucun intérêt « à vérifier ».
+# Si les signaux se contredisent, le dernier de la conversation décide.
+# Si aucun mot n'est reconnu : « curieux » à partir de ce nombre de messages
+# de l'autre personne, sinon « aucun ». Ce sont des estimations.
+actif = true
+messages_pour_curieux = 3
 
 [site]
 # Ces expressions mettent « a déjà un site » à oui. Sinon : inconnu.

@@ -187,7 +187,7 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 | Champ | Règle |
 | --- | --- |
 | `reponse_automatique` | `oui` si la première réponse arrive en moins de 2 minutes ou contient une formule type ; `non` sinon ; `à vérifier` si les indices se contredisent |
-| `interet` | `demande de prix` (prix, tarif, devis, délai, combien) ; `curieux` (réponse positive ou question) ; `aucun` (refus, ou seulement une réponse automatique) ; `à vérifier` (rien de reconnu, ou refus mêlé d'intérêt) |
+| `interet` | `demande de prix` (prix, tarif, devis, délai, combien) ; `curieux` (réponse positive ou question) ; `aucun` (refus, ou seulement une réponse automatique). Sans conclusion nette, l'outil **devine** (voir plus bas) |
 | `version_message` | A, B, C… selon le **texte exact** de mon premier message, dans l'ordre chronologique |
 | `tarif_propose` | premier montant en euros dans **mes** messages après sa demande de prix, sinon vide |
 | `a_deja_site` | `oui` si l'autre le dit, sinon inconnu |
@@ -195,6 +195,8 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 « Signé », l'acompte, le métier et la ville restent manuels.
 
 **La détection des réponses automatiques est désactivée** (`actif = false` dans `regles_messages.toml`) : je sais que mes contacts répondent tous à la main, et le délai de 2 minutes classait à tort des réponses rapides comme automatiques. Toute réponse compte donc comme vraie réponse. Les règles restent disponibles : il suffit de remettre `actif = true` et de relancer la commande.
+
+**La devinette de l'intérêt** (`[devinette]` dans `regles_messages.toml`). Je ne me souviens plus de chaque échange et je ne veux pas les trier à la main : l'outil tranche donc toujours. Si les signaux se contredisent, le **dernier** de la conversation décide. Si aucun mot n'est reconnu, 3 messages ou plus de l'autre personne donnent `curieux`, sinon `aucun`. Ces cas sont des **estimations**, et ne sont pas distingués des autres dans les chiffres. *Écarté :* garder ces cas à part (trop nombreux à relire) ; les compter tous comme intéressés (le taux d'intérêt serait gonflé). Avec `actif = false`, ils redeviennent `à vérifier`.
 
 **Détails de la détection automatique, quand elle est active :**
 
@@ -216,14 +218,14 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 - **Faux positifs** : une personne qui répond en moins de 2 minutes est classée automatique, sauf si son message contient un mot reconnu.
 - **Faux négatifs** : une réponse automatique programmée plus tard, ou formulée autrement, passe pour une vraie réponse.
 - **Un mot suffit** : « oui » seul donne `curieux`, même si c'est une simple politesse.
-- **Une conversation est vue d'un bloc** : un refus suivi plus tard d'un intérêt part en `à vérifier`, sans tenir compte de l'ordre.
+- **La devinette se trompe forcément parfois** : une réponse courte et polie sans mot reconnu compte comme `aucun`, même si la personne était intéressée. Le taux d'intérêt est donc une estimation prudente.
 - **Tarif** : c'est le premier montant trouvé, arrondi à l'euro inférieur. « Entre 500 et 800 € » donne 800, et un montant sans €, ni « euros », n'est pas vu.
 - **Versions** : le texte exact compte, donc une seule lettre personnalisée (un prénom) crée une nouvelle version. Une lettre attribuée ne change plus ensuite.
 - À l'import, les relances s'arrêtent à la première réponse, même automatique : mes messages suivants ne sont pas enregistrés comme relances. Un prospect peut ainsi paraître à relancer alors que je l'ai déjà recontacté.
 
 ## Écran « À vérifier » (étape 7)
 
-L'écran **« À vérifier »** ne montre que les cas douteux, et seulement les champs concernés. Un clic corrige, sans recharger la page : le champ disparaît, et la fiche avec lui quand il n'y a plus de doute. Un compteur indique le nombre de champs corrigés à la main.
+L'écran **« À vérifier »** ne montre que les cas douteux, et seulement les champs concernés. Avec les réglages actuels (détection désactivée, devinette active), il reste vide : il ne sert que si je réactive ces options. Un clic corrige, sans recharger la page : le champ disparaît, et la fiche avec lui quand il n'y a plus de doute. Un compteur indique le nombre de champs corrigés à la main.
 
 ## Ce que contient un prospect
 
