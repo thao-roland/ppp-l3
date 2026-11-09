@@ -194,7 +194,9 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 
 « Signé », l'acompte, le métier et la ville restent manuels.
 
-**Détails de la détection automatique :**
+**La détection des réponses automatiques est désactivée** (`actif = false` dans `regles_messages.toml`) : je sais que mes contacts répondent tous à la main, et le délai de 2 minutes classait à tort des réponses rapides comme automatiques. Toute réponse compte donc comme vraie réponse. Les règles restent disponibles : il suffit de remettre `actif = true` et de relancer la commande.
+
+**Détails de la détection automatique, quand elle est active :**
 
 - Les indices se contredisent quand un message suspect contient aussi des mots humains (« combien », « non merci »…), ou quand une formule type arrive lentement dans une question (« quels sont vos horaires ? »).
 - Si la première réponse est suspecte mais qu'un **message suivant** de l'autre personne n'a aucun signal, quelqu'un a écrit à la main : le résultat est `non`.

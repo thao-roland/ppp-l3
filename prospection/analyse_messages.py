@@ -43,7 +43,11 @@ def charger_regles(chemin=None):
     except (OSError, tomllib.TOMLDecodeError) as erreur:
         raise ErreurRegles("Le fichier regles_messages.toml est illisible.") from erreur
     try:
+        actif = brut["reponses_automatiques"].get("actif", True)
+        if not isinstance(actif, bool):
+            raise TypeError("actif doit valoir true ou false")
         return {
+            "auto_actif": actif,
             "delai_ms": int(brut["reponses_automatiques"]["delai_secondes"]) * 1000,
             "formules": _motifs(brut["reponses_automatiques"]["formules"]),
             "prix": _motifs(brut["interet"]["prix"]),
@@ -67,8 +71,8 @@ def _lire_reponse(message, messages, mon_nom, regles):
     contenu = normaliser(texte or "")
     return {
         "horodatage": horodatage,
-        "rapide": horodatage - mon_precedent < regles["delai_ms"],
-        "formule": _trouve(regles["formules"], contenu),
+        "rapide": regles["auto_actif"] and horodatage - mon_precedent < regles["delai_ms"],
+        "formule": regles["auto_actif"] and _trouve(regles["formules"], contenu),
         "question": "?" in contenu,
         "prix": _trouve(regles["prix"], contenu),
         "curieux": _trouve(regles["curieux"], contenu),

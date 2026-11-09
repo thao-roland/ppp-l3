@@ -24,7 +24,14 @@ AUTRE = "Entreprise Inventée"
 T0 = 1_780_000_000_000
 MINUTE = 60_000
 TEXTE_SECRET = "Phrase totalement inventée pour le test"
-REGLES = analyse_messages.charger_regles()
+REGLES = {**analyse_messages.charger_regles(), "auto_actif": True}
+CHARGER_VRAI = analyse_messages.charger_regles
+
+
+@pytest.fixture(autouse=True)
+def detection_active(monkeypatch):
+    """Ces tests vérifient la détection : on l'active, quel que soit le réglage du fichier."""
+    monkeypatch.setattr(analyse_messages, "charger_regles", lambda chemin=None: {**CHARGER_VRAI(chemin), "auto_actif": True})
 
 
 def mien(minutes, texte="Bonjour, je crée des sites"):
@@ -92,6 +99,43 @@ def test_sans_reponse():
 
 def test_message_de_l_autre_avant_le_mien_ignore():
     assert resultat(autre(-500, "Combien"), mien(0))["reponse_automatique"] is None
+
+
+# --- Détection désactivée dans regles_messages.toml -----------------------------
+def resultat_sans_detection(*messages):
+    conversation = {"cle": "111", "participants": [MOI, AUTRE], "messages": list(messages)}
+    return analyse_messages.analyser(conversation, MOI, {**REGLES, "auto_actif": False})
+
+
+def test_le_fichier_livre_desactive_la_detection():
+    assert CHARGER_VRAI()["auto_actif"] is False
+
+
+@pytest.mark.parametrize("texte", ["Salut", "Merci pour votre message", "Combien"])
+def test_sans_detection_toute_reponse_est_vraie(texte):
+    assert resultat_sans_detection(mien(0), autre(1, texte))["reponse_automatique"] == "non"
+
+
+def test_sans_detection_une_formule_compte_pour_l_interet():
+    assert resultat_sans_detection(mien(0), autre(1, "Notre équipe veut un devis"))["interet"] == "demande de prix"
+
+
+def test_sans_detection_une_reponse_rapide_compte_pour_l_interet():
+    assert resultat_sans_detection(mien(0), autre(1, "Pourquoi pas"))["interet"] == "curieux"
+
+
+def test_sans_reponse_reste_sans_detection():
+    assert resultat_sans_detection(mien(0))["reponse_automatique"] is None
+
+
+def test_actif_doit_etre_vrai_ou_faux(tmp_path):
+    contenu = REGLES_MINIMALES.replace("delai_secondes = 10", 'actif = "non"\ndelai_secondes = 10')
+    with pytest.raises(analyse_messages.ErreurRegles):
+        regles_depuis(tmp_path, contenu)
+
+
+def test_actif_absent_vaut_actif(tmp_path):
+    assert CHARGER_VRAI(regles_fichier(tmp_path, REGLES_MINIMALES))["auto_actif"] is True
 
 
 # --- Intérêt --------------------------------------------------------------------
@@ -192,10 +236,14 @@ deja_un_site = ["mon site"]
 """
 
 
-def regles_depuis(tmp_path, contenu):
+def regles_fichier(tmp_path, contenu):
     fichier = tmp_path / "regles.toml"
     fichier.write_text(contenu, encoding="utf-8")
-    return analyse_messages.charger_regles(fichier)
+    return fichier
+
+
+def regles_depuis(tmp_path, contenu):
+    return CHARGER_VRAI(regles_fichier(tmp_path, contenu))
 
 
 def test_changer_le_fichier_change_le_resultat(tmp_path):

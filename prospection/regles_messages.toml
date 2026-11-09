@@ -7,6 +7,9 @@
 # « prix » ne se trouve pas dans « mépris ».
 
 [reponses_automatiques]
+# false : mes contacts répondent tous à la main, donc aucune réponse n'est classée
+# automatique. Mettre true pour réactiver le délai et les formules ci-dessous.
+actif = false
 # Une réponse arrivée moins vite que ce délai après mon message est suspecte.
 delai_secondes = 120
 formules = [
