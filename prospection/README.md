@@ -16,7 +16,7 @@ Il est fait avec l'aide de **Claude Code**, étape par étape : chaque étape es
 | 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | ✅ fait |
 | 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | ✅ fait |
 | 6 | Export CSV anonymisé + export Excel avec graphiques | ✅ fait |
-| 7 | Analyse automatique et locale des messages, écran « À vérifier », exports enrichis | ✅ fait |
+| 7 | Analyse automatique et locale des messages, exports enrichis | ✅ fait |
 
 ## Lancer l'outil
 
@@ -196,7 +196,7 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 
 **La détection des réponses automatiques est désactivée** (`actif = false` dans `regles_messages.toml`) : je sais que mes contacts répondent tous à la main, et le délai de 2 minutes classait à tort des réponses rapides comme automatiques. Toute réponse compte donc comme vraie réponse. Les règles restent disponibles : il suffit de remettre `actif = true` et de relancer la commande.
 
-**La devinette de l'intérêt** (`[devinette]` dans `regles_messages.toml`). Je ne me souviens plus de chaque échange et je ne veux pas les trier à la main : l'outil tranche donc toujours. Si les signaux se contredisent, le **dernier** de la conversation décide. Si aucun mot n'est reconnu, 3 messages ou plus de l'autre personne donnent `curieux`, sinon `aucun`. Ces cas sont des **estimations**, et ne sont pas distingués des autres dans les chiffres. *Écarté :* garder ces cas à part (trop nombreux à relire) ; les compter tous comme intéressés (le taux d'intérêt serait gonflé). Avec `actif = false`, ils redeviennent `à vérifier`.
+**La devinette de l'intérêt** (`[devinette]` dans `regles_messages.toml`). Je ne me souviens plus de chaque échange et je ne veux pas les trier à la main : l'outil tranche donc toujours. Si les signaux se contredisent, le **dernier** de la conversation décide. Si aucun mot n'est reconnu, 3 messages ou plus de l'autre personne donnent `curieux`, sinon `aucun`. Ces cas sont des **estimations**, et ne sont pas distingués des autres dans les chiffres. *Écarté :* garder ces cas à part (trop nombreux à relire) ; les compter tous comme intéressés (le taux d'intérêt serait gonflé). Avec `actif = false`, ils redeviennent `à vérifier` : ils sont alors à corriger sur les fiches. Un écran dédié a existé puis a été retiré, car il restait vide avec la devinette.
 
 **Détails de la détection automatique, quand elle est active :**
 
@@ -210,7 +210,7 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 
 **Ce qui est conservé.** Le texte des réponses est lu pendant l'analyse puis oublié : il n'est **jamais enregistré ni affiché**. C'est pour ça que `analyser_cli.py` relit l'export au lieu de la base. Seuls les résultats sont stockés (`oui`, `curieux`, `450`…).
 
-**Corrections à la main.** Un champ corrigé sur l'écran « À vérifier » ou sur la fiche est noté dans la table `corrections`, et l'analyse ne le remplace plus jamais.
+**Corrections à la main.** Un champ corrigé sur la fiche d'un prospect est noté dans la table `corrections`, et l'analyse ne le remplace plus jamais.
 
 **Limites :**
 
@@ -222,10 +222,6 @@ Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de messag
 - **Tarif** : c'est le premier montant trouvé, arrondi à l'euro inférieur. « Entre 500 et 800 € » donne 800, et un montant sans €, ni « euros », n'est pas vu.
 - **Versions** : le texte exact compte, donc une seule lettre personnalisée (un prénom) crée une nouvelle version. Une lettre attribuée ne change plus ensuite.
 - À l'import, les relances s'arrêtent à la première réponse, même automatique : mes messages suivants ne sont pas enregistrés comme relances. Un prospect peut ainsi paraître à relancer alors que je l'ai déjà recontacté.
-
-## Écran « À vérifier » (étape 7)
-
-L'écran **« À vérifier »** ne montre que les cas douteux, et seulement les champs concernés. Avec les réglages actuels (détection désactivée, devinette active), il reste vide : il ne sert que si je réactive ces options. Un clic corrige, sans recharger la page : le champ disparaît, et la fiche avec lui quand il n'y a plus de doute. Un compteur indique le nombre de champs corrigés à la main.
 
 ## Ce que contient un prospect
 
@@ -301,8 +297,6 @@ J'ai ajouté une case **« dates estimées »** : certaines dates de mon début 
 
 **Versions dans une table à part.** La correspondance texte → lettre est conservée, donc une lettre ne change pas si un message plus ancien apparaît plus tard. *Écarté :* recalculer les lettres à chaque analyse (A pourrait désigner un autre message d'un rapport à l'autre).
 
-**Un peu de JavaScript, seulement pour « À vérifier ».** Enregistrer un clic sans recharger la page ne peut pas se faire en HTML seul. Le fichier `static/a_verifier.js` est petit, sans bibliothèque ni compilation. Le serveur n'accepte que du JSON, sur une liste fermée de champs, et refuse les requêtes venant d'un autre site. *Écarté :* htmx ou React (une dépendance pour un seul écran) ; un formulaire par ligne (la page se recharge à chaque clic et on perd sa place dans la liste).
-
 **Tests avec pytest.** Chaque test
 
 **Tests avec pytest.** Chaque test utilise une base temporaire jetable ; je vérifie les ajouts, les modifications, les refus de données incorrectes, la sécurité et l'import. *Écarté :* `unittest`, plus verbeux.
@@ -329,7 +323,6 @@ prospection/
 ├── analyse_messages.py  analyse automatique des messages (règles de mots)
 ├── regles_messages.toml  listes de mots et délai (modifiable)
 ├── analyser_cli.py   relance l'analyse sur la base (nombres seulement)
-├── pages_a_verifier.py  écran « À vérifier » (cas douteux, un clic)
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS

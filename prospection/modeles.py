@@ -14,11 +14,6 @@ REPONSES_AUTOMATIQUES = ["non", "oui", A_VERIFIER]
 
 # Champs remplis par l'analyse automatique (liste fermée, utilisée en SQL).
 CHAMPS_ANALYSES = ("reponse_automatique", "interet", "version_message", "tarif_propose", "a_deja_site")
-# Choix proposés sur l'écran « À vérifier ».
-CORRECTIONS_POSSIBLES = {
-    "reponse_automatique": ["non", "oui"],
-    "interet": ["aucun", "curieux", "demande de prix"],
-}
 
 # Champs enregistrés tels quels dans la table prospects (hors code et id).
 COLONNES = [
@@ -166,12 +161,6 @@ def modifier(conn, code, valeurs):
 
 
 # --- Analyse automatique et corrections à la main -----------------------------
-def correction_valide(champ, valeur):
-    """Vrai si ce choix est proposé sur l'écran « À vérifier »."""
-    return (isinstance(champ, str) and champ in CORRECTIONS_POSSIBLES
-            and isinstance(valeur, str) and valeur in CORRECTIONS_POSSIBLES[champ])
-
-
 def _verifier_champ_analyse(colonne):
     """Le nom de colonne envoyé en SQL ne vient jamais de l'extérieur."""
     if colonne not in CHAMPS_ANALYSES:
@@ -190,22 +179,10 @@ def marquer_correction(conn, prospect_id, champ):
     conn.execute("INSERT OR REPLACE INTO corrections (prospect_id, champ) VALUES (?, ?)", (prospect_id, champ))
 
 
-def corriger(conn, prospect_id, champ, valeur):
-    """Applique une correction : elle ne sera plus remplacée par l'analyse."""
-    ecrire_champ_analyse(conn, prospect_id, champ, valeur)
-    marquer_correction(conn, prospect_id, champ)
-    conn.commit()
-
-
 def champs_corriges(conn, prospect_id):
     """Champs de ce prospect corrigés à la main."""
     lignes = conn.execute("SELECT champ FROM corrections WHERE prospect_id = ?", (prospect_id,))
     return {l["champ"] for l in lignes}
-
-
-def nombre_corrections(conn):
-    """Nombre total de champs corrigés à la main."""
-    return conn.execute("SELECT COUNT(*) FROM corrections").fetchone()[0]
 
 
 def obtenir(conn, code):

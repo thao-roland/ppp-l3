@@ -29,7 +29,8 @@ def prospect(**changements):
 
 
 def marquer(conn, code, valeur):
-    modeles.corriger(conn, modeles.obtenir(conn, code)["id"], "reponse_automatique", valeur)
+    modeles.ecrire_champ_analyse(conn, modeles.obtenir(conn, code)["id"], "reponse_automatique", valeur)
+    conn.commit()
 
 
 # --- Tableau et analyse ---------------------------------------------------------

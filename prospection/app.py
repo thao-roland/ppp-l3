@@ -11,7 +11,6 @@ from flask import Flask, abort, flash, g, redirect, render_template, request, ur
 import db
 import modeles
 import analyse_messages
-import pages_a_verifier
 import pages_exports
 import pages_import
 import pages_tableau
@@ -44,7 +43,6 @@ def create_app(donnees=None):
     app.register_blueprint(pages_import.bp)
     app.register_blueprint(pages_tableau.bp)
     app.register_blueprint(pages_exports.bp)
-    app.register_blueprint(pages_a_verifier.bp)
     return app
 
 

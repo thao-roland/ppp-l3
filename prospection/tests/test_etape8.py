@@ -15,7 +15,6 @@ import analyser_cli
 import db
 import importation
 import modeles
-import pages_a_verifier
 import tableau
 from conftest import formulaire_valide
 
@@ -411,7 +410,10 @@ def test_simulation_n_enregistre_rien(conn, export):
 
 def test_analyse_ne_remplace_jamais_une_correction(conn, export):
     importation.importer(conn, export, MOI)
-    modeles.corriger(conn, fiche(conn, "1")["id"], "interet", "curieux")
+    identifiant = fiche(conn, "1")["id"]
+    modeles.ecrire_champ_analyse(conn, identifiant, "interet", "curieux")
+    modeles.marquer_correction(conn, identifiant, "interet")
+    conn.commit()
     importation.analyser_base(conn, export, MOI)
     assert fiche(conn, "1")["interet"] == "curieux"
     assert fiche(conn, "1")["tarif_propose"] == 450
@@ -515,116 +517,11 @@ def test_version_saisie_sur_la_fiche(version, valide):
     assert ("version_message" not in erreurs) is valide
 
 
-# --- Écran « À vérifier » -------------------------------------------------------
-def ajouter(client, conn, reponse_automatique=None, interet=None, **changements):
-    valeurs = {"date_reponse": "2026-10-03", "statut": "a répondu", **changements}
-    client.post("/prospects/nouveau", data=formulaire_valide(**valeurs))
-    code = max(p["code"] for p in modeles.lister(conn))
-    identifiant = modeles.obtenir(conn, code)["id"]
-    if reponse_automatique:
-        modeles.ecrire_champ_analyse(conn, identifiant, "reponse_automatique", reponse_automatique)
-    if interet:
-        modeles.ecrire_champ_analyse(conn, identifiant, "interet", interet)
-    conn.commit()
-    return code
-
-
-def poster(client, code, champ, valeur):
-    return client.post(f"/a-verifier/{code}", json={"champ": champ, "valeur": valeur})
-
-
-def test_seulement_les_cas_douteux(client, conn):
-    douteux = ajouter(client, conn, reponse_automatique="à vérifier")
-    douteux_interet = ajouter(client, conn, interet="à vérifier")
-    clair = ajouter(client, conn, reponse_automatique="non")
-    page = client.get("/a-verifier").get_data(as_text=True)
-    assert f"<strong>{douteux}</strong>" in page and f"<strong>{douteux_interet}</strong>" in page
-    assert f"<strong>{clair}</strong>" not in page
-
-
-def test_seuls_les_champs_douteux_sont_proposes(client, conn):
-    ajouter(client, conn, interet="à vérifier")
-    page = client.get("/a-verifier").get_data(as_text=True)
-    assert 'data-champ="interet"' in page and 'data-champ="reponse_automatique"' not in page
-
-
-def test_reponses_douteuses_d_abord():
-    groupe = [dict(prospect(interet="à vérifier"), code="P1"), dict(prospect(reponse_automatique="à vérifier"), code="P2")]
-    assert [p["code"] for p in pages_a_verifier.cas_douteux(groupe)] == ["P2", "P1"]
-
-
-def test_page_vide(client):
-    page = client.get("/a-verifier").get_data(as_text=True)
-    assert 'id="rien-a-verifier" class="message"' in page and 'href="/a-verifier"' in page
-    assert 'class="message" hidden' not in page
-
-
-def test_ancienne_adresse_retiree(client):
+# --- L'ancien écran « À vérifier » a été retiré ------------------------------
+def test_ecran_retire(client):
+    assert client.get("/a-verifier").status_code == 404
     assert client.get("/qualifier").status_code == 404
-
-
-@pytest.mark.parametrize("champ, valeur", [
-    ("interet", "aucun"), ("interet", "curieux"), ("interet", "demande de prix"),
-    ("reponse_automatique", "non"), ("reponse_automatique", "oui"),
-])
-def test_correction_enregistree(client, conn, champ, valeur):
-    code = ajouter(client, conn, reponse_automatique="à vérifier", interet="à vérifier")
-    reponse = poster(client, code, champ, valeur)
-    assert reponse.status_code == 200
-    conn.commit()
-    p = modeles.obtenir(conn, code)
-    assert p[champ] == valeur
-    assert modeles.champs_corriges(conn, p["id"]) == {champ}
-
-
-def test_compteur_de_corrections(client, conn):
-    code = ajouter(client, conn, reponse_automatique="à vérifier", interet="à vérifier")
-    assert poster(client, code, "interet", "curieux").get_json()["corrections"] == 1
-    assert poster(client, code, "reponse_automatique", "non").get_json()["corrections"] == 2
-    assert poster(client, code, "interet", "aucun").get_json()["corrections"] == 2
-    assert '<strong id="nb-corrections">2</strong>' in client.get("/a-verifier").get_data(as_text=True)
-
-
-def test_le_cas_corrige_quitte_la_liste(client, conn):
-    code = ajouter(client, conn, reponse_automatique="à vérifier")
-    poster(client, code, "reponse_automatique", "non")
-    conn.commit()
-    assert f"<strong>{code}</strong>" not in client.get("/a-verifier").get_data(as_text=True)
-
-
-@pytest.mark.parametrize("champ, valeur", [
-    ("interet", "à vérifier"), ("interet", "beaucoup"), ("interet", ""), ("reponse_automatique", "à vérifier"),
-    ("nom_entreprise", "Autre"), ("statut", "signé"), ("tarif_propose", "100"), ("acompte", "50"),
-    ("interet", ["curieux"]), ("interet", True), (["interet"], "curieux"), ("interet; DROP TABLE prospects", "aucun"),
-])
-def test_valeurs_refusees(client, conn, champ, valeur):
-    code = ajouter(client, conn, interet="à vérifier")
-    avant = dict(modeles.obtenir(conn, code))
-    reponse = poster(client, code, champ, valeur)
-    assert reponse.status_code == 400
-    conn.commit()
-    assert dict(modeles.obtenir(conn, code)) == avant and modeles.nombre_corrections(conn) == 0
-
-
-def test_prospect_inconnu(client):
-    assert poster(client, "P999", "interet", "curieux").status_code == 404
-
-
-def test_formulaire_classique_refuse(client, conn):
-    code = ajouter(client, conn, interet="à vérifier")
-    assert client.post(f"/a-verifier/{code}", data={"champ": "interet", "valeur": "curieux"}).status_code == 400
-
-
-def test_autre_site_refuse(client, conn):
-    code = ajouter(client, conn, interet="à vérifier")
-    reponse = client.post(f"/a-verifier/{code}", json={"champ": "interet", "valeur": "curieux"},
-                          headers={"Origin": "https://site-piege.example"})
-    assert reponse.status_code == 403
-
-
-def test_nom_echappe(client, conn):
-    ajouter(client, conn, interet="à vérifier", nom_entreprise="<script>alert(1)</script>")
-    assert "<script>alert(1)</script>" not in client.get("/a-verifier").get_data(as_text=True)
+    assert "/a-verifier" not in client.get("/").get_data(as_text=True)
 
 
 def test_ecriture_refuse_une_colonne_libre(conn):
