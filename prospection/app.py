@@ -12,6 +12,7 @@ import db
 import modeles
 import pages_exports
 import pages_import
+import pages_qualifier
 import pages_tableau
 import scoring
 
@@ -41,6 +42,7 @@ def create_app(donnees=None):
     app.register_blueprint(pages_import.bp)
     app.register_blueprint(pages_tableau.bp)
     app.register_blueprint(pages_exports.bp)
+    app.register_blueprint(pages_qualifier.bp)
     return app
 
 
@@ -83,6 +85,7 @@ def _listes_formulaire():
     return {
         "statuts": modeles.STATUTS, "interets": modeles.INTERETS,
         "versions": modeles.VERSIONS, "canaux": modeles.CANAUX,
+        "reponses_automatiques": modeles.REPONSES_AUTOMATIQUES,
     }
 
 

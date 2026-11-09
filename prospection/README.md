@@ -1,6 +1,6 @@
 # prospection
 
-> **Statut : les 6 étapes sont réalisées.**
+> **Statut : les 6 étapes et l'amélioration de l'étape 7 sont réalisées.**
 
 Petit outil (appli web **en local**) pour suivre ma prospection de sites web auprès de petites entreprises, surtout via Facebook / Messenger, et en sortir de vraies données pour mes rapports de PPP.
 
@@ -16,6 +16,7 @@ Il est fait avec l'aide de **Claude Code**, étape par étape : chaque étape es
 | 4 | Tableau de bord (contacts, taux de réponse, A/B, canaux, évolution par semaine) | ✅ fait |
 | 5 | Analyse statistique (intervalle de Wilson, test de Fisher) | ✅ fait |
 | 6 | Export CSV anonymisé + export Excel avec graphiques | ✅ fait |
+| 7 | Réponses automatiques, écran « Qualifier », exports enrichis | ✅ fait |
 
 ## Lancer l'outil
 
@@ -126,7 +127,8 @@ La page **« Tableau de bord »** n'affiche que des totaux : aucun nom ni texte 
 | Indicateur | Définition |
 | --- | --- |
 | Contacts | tous les prospects de la base |
-| Réponses | une date de réponse, ou un statut (a répondu / intéressé / signé) ou un intérêt qui suppose une réponse |
+| Vraies réponses | une date de réponse ou un statut qui en suppose une, **sauf** si la réponse est marquée automatique ou à vérifier. Un prospect intéressé ou signé compte toujours. |
+| Automatiques / À vérifier | affichées à côté, hors du taux de réponse (voir « Réponses automatiques ») |
 | Intéressés | intérêt « curieux » ou « demande de prix », ou statut intéressé / signé |
 | Signés | statut « signé » |
 
@@ -137,7 +139,7 @@ La page **« Tableau de bord »** n'affiche que des totaux : aucun nom ni texte 
 
 ## Analyse statistique (étape 5)
 
-La page **« Analyse »** n'affiche que des totaux. Elle utilise les mêmes définitions de « réponse » que le tableau de bord.
+La page **« Analyse »** n'affiche que des totaux. Elle utilise les mêmes définitions de « réponse » que le tableau de bord : Wilson et Fisher portent sur les **vraies réponses**.
 
 - **Intervalle de Wilson à 95 %** : la fourchette plausible du vrai taux de réponse, au global, par version et par canal.
 - **Test exact de Fisher** (bilatéral) : compare les réponses de la version A et de la version B. Plus la valeur *p* est petite, moins l'écart s'explique par le hasard.
@@ -153,7 +155,7 @@ Les seuils sont en haut de `analyse.py` (`MIN_CONTACTS_PAR_GROUPE`, `SEUIL_P`). 
 **Limites à garder en tête :**
 
 - Ces calculs supposent des contacts comparables. Si A et B n'ont pas été envoyées aux mêmes périodes ou aux mêmes métiers, un écart peut venir d'autre chose que du message.
-- Toute réponse compte, y compris une réponse automatique d'une Page ou un refus poli.
+- Une vraie réponse peut être un refus poli. Les réponses à vérifier non corrigées sont hors du taux, qui peut donc être un peu sous-estimé.
 - Sans version renseignée dans les fiches, la comparaison A/B reste vide.
 
 ## Exports (étape 6)
@@ -168,11 +170,47 @@ La page **« Exports »** télécharge deux fichiers pour une période choisie, 
 | `date_premier_message`, `date_reponse` | dates au format AAAA-MM-JJ |
 | `dates_estimees` | `oui` si la date est reconstituée de mémoire |
 | `canal`, `version_message`, `interet`, `statut` | comme dans la fiche |
-| `type_reponse` | `aucune`, `réponse`, `intéressé` ou `signé` (même définition que le tableau de bord) |
+| `type_reponse` | `aucune`, `automatique`, `à vérifier`, `réponse`, `intéressé` ou `signé` (même définition que le tableau de bord) |
+| `reponse_automatique` | `oui`, `non`, `à vérifier`, ou vide si aucune détection |
+| `nb_relances` | nombre de relances (pas leurs dates) |
+| `a_deja_site` | `oui`, `non` ou `inconnu` |
 
 Aucun nom, ville, métier, tarif, identifiant de conversation ni texte de message.
 
-**Excel** : des totaux et des graphiques seulement (feuilles Résumé, Semaines, Versions AB, Canaux), aucune ligne par prospect. Il reste hors du dépôt. Si des taux paraissent vides à l'ouverture, cliquer sur « Activer la modification » : Excel doit calculer les formules.
+**Excel** : des totaux et des graphiques seulement (feuilles Résumé, Semaines, Versions AB, Canaux), aucune ligne par prospect. Il reste hors du dépôt. Chaque formule est écrite avec sa valeur déjà calculée : tout s'affiche, même en mode protégé.
+
+## Réponses automatiques (étape 7)
+
+**Pourquoi.** Beaucoup de Pages Facebook envoient un message automatique dès qu'on leur écrit. Sans tri, chaque message automatique compte comme une réponse et gonfle le taux de réponse : mes rapports diraient que des entreprises m'ont répondu alors que personne n'a lu mon message.
+
+**Comment.** À l'import, chaque première réponse reçoit deux signaux possibles :
+
+1. elle arrive **moins de 2 minutes** après mon dernier message ;
+2. son texte contient une **formule type** : « merci pour votre message », « nous vous répondrons », « notre équipe », « réponse automatique », « horaires » (sans tenir compte des accents ni des majuscules).
+
+| Signaux | `reponse_automatique` | Dans le taux de réponse ? |
+| --- | --- | --- |
+| Aucun | `non` | oui |
+| Un seul | `à vérifier` | non, affichée à côté |
+| Les deux | `oui` | non, affichée à côté |
+
+- Si la première réponse est suspecte mais qu'un **message suivant** de l'autre personne n'a aucun signal, quelqu'un a écrit à la main : le résultat est `non`.
+- Un prospect marqué **intéressé ou signé** compte toujours comme vraie réponse.
+- Le texte de la réponse est lu pendant l'import pour chercher les formules, puis oublié : il n'est **jamais enregistré ni affiché**.
+- Réimporter un export complète les fiches sans détection, et ne remplace **jamais** une valeur déjà présente, donc jamais une correction à la main.
+- Les réglages sont en haut de `facebook.py` : `DELAI_REPONSE_AUTO_SECONDES` et `FORMULES_AUTO`.
+
+**Limites :**
+
+- **Faux positifs** : une personne devant son téléphone peut répondre en moins de 2 minutes, ou parler d'« horaires » naturellement. C'est pour ça qu'un seul signal donne `à vérifier`, et pas `oui`.
+- **Faux négatifs** : une réponse automatique programmée plus tard, ou formulée autrement, passe pour une vraie réponse.
+- **Les seuils sont des choix** : ni les 2 minutes ni la liste de formules n'ont été mesurés sur un échantillon relu à la main. Le résultat est une estimation.
+- Tant que les réponses `à vérifier` ne sont pas corrigées, elles sont hors du taux, qui peut être sous-estimé.
+- Le score et la liste des relances n'utilisent pas cette détection : ils voient toujours la date de réponse.
+
+## Écran « Qualifier » (étape 7)
+
+L'écran **« Qualifier »** liste les prospects qui ont répondu, les réponses à vérifier en premier. Chaque clic enregistre un seul champ, sans recharger la page : réponse automatique, intérêt, version, signé. Le tarif et l'acompte s'enregistrent en quittant la case. Un second clic sur une version ou sur « Signé » annule ; retirer « Signé » remet le statut à « a répondu ».
 
 ## Ce que contient un prospect
 
@@ -238,9 +276,15 @@ J'ai ajouté une case **« dates estimées »** : certaines dates de mon début 
 
 **Fichiers téléchargés, pas écrits dans le dépôt.** Un export ne peut pas se retrouver dans `git status` sans geste de ma part. Un test vérifie en plus qu'aucun Excel n'est sous `prospection/` et qu'un CSV n'y est accepté que dans `donnees/`, avec exactement les bonnes colonnes. *Écarté :* une écriture automatique dans `donnees/`, qui publierait sans relecture.
 
-**Excel avec `openpyxl`.** Il crée de vrais graphiques Excel, modifiables, et sait relire le fichier dans les tests. *Écarté :* XlsxWriter (ne sait pas relire, il aurait fallu `openpyxl` en plus pour les tests) ; des images matplotlib collées dans la feuille (non modifiables).
+**Excel avec `XlsxWriter`.** C'est le seul des deux outils Python courants à écrire dans une même cellule une formule **et** sa valeur calculée : le fichier s'affiche complet dès l'ouverture, même en mode protégé. `openpyxl` reste utilisé dans les tests pour relire le fichier. *Écarté :* `openpyxl` seul (utilisé à l'étape 6 : sans valeurs calculées, les taux restaient vides avant « Activer la modification ») ; des images matplotlib collées dans la feuille (non modifiables).
 
 **Taux et intervalles en formules Excel.** On peut cliquer sur une cellule et vérifier le calcul. Les comptages et la valeur *p* de Fisher sont écrits par l'outil : Excel n'a pas de fonction simple pour ce test. *Écarté :* écrire tous les résultats en valeurs figées, impossibles à relire dans le fichier.
+
+**Détection à l'import, avec trois niveaux.** L'heure exacte et le texte de la réponse ne sont connus qu'à ce moment-là, et je ne veux stocker ni l'un ni l'autre. Le niveau `à vérifier` évite de décider seul quand il n'y a qu'un indice. *Écarté :* un simple oui / non (trop de vraies réponses rapides seraient retirées sans contrôle) ; stocker le texte des réponses pour les relire (donnée personnelle en plus, sans nécessité).
+
+**Un peu de JavaScript, seulement pour Qualifier.** Enregistrer un clic sans recharger la page ne peut pas se faire en HTML seul. Le fichier `static/qualifier.js` est petit, sans bibliothèque ni compilation. Le serveur n'accepte que du JSON, sur une liste fermée de champs, et refuse les requêtes venant d'un autre site. *Écarté :* htmx ou React (une dépendance pour un seul écran) ; un formulaire par ligne (la page se recharge à chaque clic et on perd sa place dans la liste).
+
+**Tests avec pytest.** Chaque test
 
 **Tests avec pytest.** Chaque test utilise une base temporaire jetable ; je vérifie les ajouts, les modifications, les refus de données incorrectes, la sécurité et l'import. *Écarté :* `unittest`, plus verbeux.
 
@@ -263,6 +307,7 @@ prospection/
 ├── exports.py        période et CSV anonymisé
 ├── exports_excel.py  fichier Excel avec graphiques
 ├── pages_exports.py  page « Exports » (téléchargements)
+├── pages_qualifier.py  écran « Qualifier » (un clic = un champ)
 ├── schema.sql        structure de la base
 ├── templates/        pages HTML
 ├── static/           CSS

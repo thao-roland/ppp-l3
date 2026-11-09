@@ -14,7 +14,7 @@ def prospect(**changements):
     """Prospect fictif contacté, sans réponse."""
     valeurs = {"statut": "contacté", "interet": "aucun", "date_reponse": None,
                "date_premier_message": "2026-10-05", "version_message": "A",
-               "canal": "Messenger", "dates_estimees": 0}
+               "canal": "Messenger", "dates_estimees": 0, "reponse_automatique": None}
     valeurs.update(changements)
     return valeurs
 
@@ -64,6 +64,7 @@ def test_bilan():
               prospect(date_reponse="2026-10-06", interet="curieux"), prospect(statut="signé")]
     assert tableau.bilan(groupe) == {
         "contacts": 4, "reponses": 3, "interesses": 2, "signes": 1,
+        "automatiques": 0, "a_verifier": 0, "sans_reponse": 1,
         "taux_reponse": 75.0, "taux_interet": 50.0, "taux_signature": 25.0}
 
 
@@ -163,7 +164,7 @@ def test_segments_selon_les_reponses():
 
 def test_titre_de_barre_ne_contient_que_des_chiffres():
     titre = tableau.graphique_semaines(semaines_exemple())["barres"][0]["titre"]
-    assert titre == "Semaine du 05/10/2026 : 2 contacts, 1 réponse (50,0 %)"
+    assert titre == "Semaine du 05/10/2026 : 2 contacts, 1 vraie réponse (50,0 %)"
 
 
 def test_graduations_de_zero_au_plafond():

@@ -91,6 +91,8 @@ def _migrer(conn):
     colonnes = {l["name"] for l in conn.execute("PRAGMA table_info(prospects)")}
     if "conversation_fb" not in colonnes:
         conn.execute("ALTER TABLE prospects ADD COLUMN conversation_fb TEXT")
+    if "reponse_automatique" not in colonnes:
+        conn.execute("ALTER TABLE prospects ADD COLUMN reponse_automatique TEXT")
     # Une conversation Facebook ne peut donner qu'un seul prospect.
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_prospects_conversation_fb "

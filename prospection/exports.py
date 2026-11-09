@@ -11,7 +11,11 @@ from datetime import date
 import tableau
 
 COLONNES_CSV = ("code", "date_premier_message", "date_reponse", "dates_estimees",
-                "canal", "version_message", "type_reponse", "interet", "statut")
+                "canal", "version_message", "type_reponse", "reponse_automatique",
+                "nb_relances", "interet", "statut", "a_deja_site")
+LIBELLES_TYPE = {"vraie": "réponse", "automatique": "automatique",
+                 "a_verifier": "à vérifier", "aucune": "aucune"}
+LIBELLES_SITE = {None: "inconnu", 0: "non", 1: "oui"}
 
 
 # --- La période ---------------------------------------------------------------
@@ -52,26 +56,32 @@ def nom_fichier(base, debut, fin, extension):
 
 # --- Le CSV -------------------------------------------------------------------
 def type_reponse(prospect):
-    """Nature de la réponse : aucune, réponse, intéressé ou signé."""
+    """Nature de la réponse : aucune, automatique, à vérifier, réponse, intéressé ou signé."""
     if prospect["statut"] == "signé":
         return "signé"
     if tableau.est_interesse(prospect):
         return "intéressé"
-    return "réponse" if tableau.a_repondu(prospect) else "aucune"
+    return LIBELLES_TYPE[tableau.categorie_reponse(prospect)]
 
 
-def _ligne_csv(prospect):
+def _ligne_csv(prospect, nb_relances):
     """Uniquement les colonnes autorisées."""
-    valeurs = {c: prospect[c] for c in COLONNES_CSV if c != "type_reponse"}
-    return {**valeurs, "type_reponse": type_reponse(prospect),
-            "dates_estimees": "oui" if prospect["dates_estimees"] else "non"}
+    calculees = {
+        "type_reponse": type_reponse(prospect), "nb_relances": nb_relances,
+        "dates_estimees": "oui" if prospect["dates_estimees"] else "non",
+        "a_deja_site": LIBELLES_SITE[prospect["a_deja_site"]],
+    }
+    return {c: calculees[c] if c in calculees else prospect[c] for c in COLONNES_CSV}
 
 
-def csv_anonymise(prospects):
-    """Texte du CSV, trié par date puis par code (UTF-8, séparateur virgule)."""
+def csv_anonymise(prospects, relances):
+    """Texte du CSV, trié par date puis par code (UTF-8, séparateur virgule).
+
+    `relances` = {id du prospect: [dates]} ; seul leur nombre sort du fichier.
+    """
     ordre = sorted(prospects, key=lambda p: (p["date_premier_message"] or "", p["code"]))
     sortie = io.StringIO()
     ecrivain = csv.DictWriter(sortie, fieldnames=COLONNES_CSV, lineterminator="\n")
     ecrivain.writeheader()
-    ecrivain.writerows(_ligne_csv(p) for p in ordre)
+    ecrivain.writerows(_ligne_csv(p, len(relances.get(p["id"], []))) for p in ordre)
     return sortie.getvalue()

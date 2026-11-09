@@ -57,6 +57,13 @@
       <input type="date" name="date_reponse" value="{{ valeurs.date_reponse or '' }}">
       {{ erreur("date_reponse") }}
     </label>
+    <label>Réponse automatique
+      <select name="reponse_automatique">
+        <option value="">—</option>
+        {% for r in reponses_automatiques %}<option {{ "selected" if valeurs.reponse_automatique == r }}>{{ r }}</option>{% endfor %}
+      </select>
+      {{ erreur("reponse_automatique") }}
+    </label>
     <label class="case">
       <input type="checkbox" name="dates_estimees" value="1" {{ "checked" if valeurs.dates_estimees }}>
       Dates estimées (de mémoire)

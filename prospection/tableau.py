@@ -3,6 +3,7 @@
 Ce module ne lit pas la base : il reçoit la liste des prospects.
 """
 
+from collections import Counter
 from datetime import date, timedelta
 from math import ceil
 
@@ -20,10 +21,26 @@ def est_interesse(prospect):
     return prospect["interet"] in NIVEAUX_INTERESSES or prospect["statut"] in STATUTS_INTERESSES
 
 
+def categorie_reponse(prospect):
+    """« vraie », « automatique », « a_verifier » ou « aucune ».
+
+    Un prospect intéressé ou signé a forcément répondu pour de vrai, même si sa
+    première réponse était automatique.
+    """
+    if est_interesse(prospect):
+        return "vraie"
+    if prospect["reponse_automatique"] == "oui":
+        return "automatique"
+    if prospect["reponse_automatique"] == "à vérifier":
+        return "a_verifier"
+    if prospect["date_reponse"] or prospect["statut"] in STATUTS_AVEC_REPONSE:
+        return "vraie"
+    return "aucune"
+
+
 def a_repondu(prospect):
-    """Une date de réponse, ou un statut / intérêt qui suppose une réponse."""
-    return (bool(prospect["date_reponse"]) or prospect["statut"] in STATUTS_AVEC_REPONSE
-            or est_interesse(prospect))
+    """Vraie réponse : ni automatique, ni encore à vérifier."""
+    return categorie_reponse(prospect) == "vraie"
 
 
 def taux(nombre, total):
@@ -37,13 +54,16 @@ def format_pourcent(valeur):
 
 
 def bilan(prospects):
-    """Contacts, réponses, intéressés, signés et leurs taux pour un groupe."""
+    """Contacts, vraies réponses, automatiques, intéressés, signés et taux d'un groupe."""
     contacts = len(prospects)
-    reponses = sum(a_repondu(p) for p in prospects)
+    categories = Counter(categorie_reponse(p) for p in prospects)
+    reponses = categories["vraie"]
     interesses = sum(est_interesse(p) for p in prospects)
     signes = sum(p["statut"] == "signé" for p in prospects)
     return {
         "contacts": contacts, "reponses": reponses, "interesses": interesses, "signes": signes,
+        "automatiques": categories["automatique"], "a_verifier": categories["a_verifier"],
+        "sans_reponse": categories["aucune"],
         "taux_reponse": taux(reponses, contacts), "taux_interet": taux(interesses, contacts),
         "taux_signature": taux(signes, contacts),
     }
@@ -131,19 +151,18 @@ def _chemin(x, largeur, haut, bas, arrondi):
 
 
 def _segments(x, largeur, semaine, y_valeur):
-    """Bas de barre = ont répondu ; haut de barre = sans réponse."""
-    base, reponses = y_valeur(0), semaine["reponses"]
-    y_reponses, y_total = y_valeur(reponses), y_valeur(semaine["contacts"])
-    if not semaine["contacts"]:
-        return []
-    if reponses == semaine["contacts"]:
-        return [{"chemin": _chemin(x, largeur, y_total, base, ARRONDI), "classe": "serie-reponse"}]
-    if not reponses:
-        return [{"chemin": _chemin(x, largeur, y_total, base, ARRONDI), "classe": "serie-sans"}]
-    bas_haut = y_reponses - ESPACE_SEGMENTS
-    return [{"chemin": _chemin(x, largeur, y_reponses, base, 0), "classe": "serie-reponse"},
-            {"chemin": _chemin(x, largeur, min(y_total, bas_haut - 1), bas_haut, ARRONDI),
-             "classe": "serie-sans"}]
+    """Du bas vers le haut : vraies réponses, automatiques ou à vérifier, sans réponse."""
+    couches = [c for c in ((semaine["reponses"], "serie-reponse"),
+                           (semaine["automatiques"] + semaine["a_verifier"], "serie-auto"),
+                           (semaine["sans_reponse"], "serie-sans")) if c[0]]
+    segments, cumul = [], 0
+    for numero, (valeur, classe) in enumerate(couches):
+        bas = y_valeur(0) if numero == 0 else y_valeur(cumul) - ESPACE_SEGMENTS
+        cumul += valeur
+        arrondi = ARRONDI if numero == len(couches) - 1 else 0
+        segments.append({"chemin": _chemin(x, largeur, min(y_valeur(cumul), bas - 1), bas, arrondi),
+                         "classe": classe})
+    return segments
 
 
 def _compte(nombre, mot):
@@ -155,7 +174,10 @@ def _barre(indice, semaine, creneau, largeur, y_valeur, frequence_etiquette):
     x_creneau = MARGE_GAUCHE + indice * creneau
     x = x_creneau + (creneau - largeur) / 2
     titre = (f"Semaine du {semaine['libelle']} : {_compte(semaine['contacts'], 'contact')}, "
-             f"{_compte(semaine['reponses'], 'réponse')} ({format_pourcent(semaine['taux_reponse'])})")
+             f"{_compte(semaine['reponses'], 'vraie réponse')} ({format_pourcent(semaine['taux_reponse'])})")
+    douteuses = semaine["automatiques"] + semaine["a_verifier"]
+    if douteuses:
+        titre += f", automatiques ou à vérifier : {douteuses}"
     return {
         "x_creneau": round(x_creneau, 1), "creneau": round(creneau, 1), "titre": titre,
         "centre": round(x + largeur / 2, 1), "segments": _segments(x, largeur, semaine, y_valeur),

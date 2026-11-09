@@ -46,7 +46,8 @@ def export_csv():
     prospects, debut, fin, erreur = _prospects_de_la_periode()
     if erreur:
         return _page(erreur, 400)
-    return _telechargement(exports.csv_anonymise(prospects), "text/csv; charset=utf-8",
+    relances = modeles.dates_relances(current_app.obtenir_conn())
+    return _telechargement(exports.csv_anonymise(prospects, relances), "text/csv; charset=utf-8",
                            exports.nom_fichier("prospection_anonymise", debut, fin, "csv"))
 
 

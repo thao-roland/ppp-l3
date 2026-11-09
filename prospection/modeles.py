@@ -8,12 +8,14 @@ INTERETS = ["aucun", "curieux", "demande de prix"]
 VERSIONS = ["A", "B"]
 CANAUX = ["Messenger", "Facebook (commentaire)", "Instagram", "E-mail",
           "Téléphone", "Sur place", "Autre"]
+REPONSES_AUTOMATIQUES = ["non", "oui", "à vérifier"]
 
 # Champs enregistrés tels quels dans la table prospects (hors code et id).
 COLONNES = [
     "nom_entreprise", "metier", "ville", "canal", "date_premier_message",
     "version_message", "texte_envoye", "date_reponse", "interet",
     "tarif_propose", "acompte", "statut", "a_deja_site", "dates_estimees",
+    "reponse_automatique",
 ]
 
 
@@ -86,6 +88,7 @@ def valider(formulaire):
         "statut": _choix(formulaire, "statut", STATUTS, erreurs) or "contacté",
         "a_deja_site": _oui_non(formulaire, "a_deja_site", erreurs),
         "dates_estimees": 1 if formulaire.get("dates_estimees") else 0,
+        "reponse_automatique": _choix(formulaire, "reponse_automatique", REPONSES_AUTOMATIQUES, erreurs),
     }
     if not v["nom_entreprise"]:
         erreurs["nom_entreprise"] = "Le nom de l'entreprise est obligatoire."
@@ -133,6 +136,50 @@ def modifier(conn, code, valeurs):
         f"UPDATE prospects SET {affectations} WHERE code = ?",
         [valeurs[c] for c in COLONNES] + [code],
     )
+    conn.commit()
+
+
+# --- Qualification rapide : un seul champ à la fois ---------------------------
+# Liste fermée : le nom de colonne envoyé en SQL ne vient jamais du navigateur.
+CHAMPS_RAPIDES = {
+    "interet": lambda f, e: _choix(f, "interet", INTERETS, e),
+    "version_message": lambda f, e: _choix(f, "version_message", VERSIONS, e),
+    "reponse_automatique": lambda f, e: _choix(f, "reponse_automatique", REPONSES_AUTOMATIQUES, e),
+    "tarif_propose": lambda f, e: _euros(f, "tarif_propose", e),
+    "acompte": lambda f, e: _euros(f, "acompte", e),
+}
+CHAMPS_OBLIGATOIRES = ("interet", "reponse_automatique")
+STATUT_SI_NON_SIGNE = "a répondu"
+ERREUR_CHAMP = "Champ ou valeur non reconnu."
+
+
+def _champ_signe(valeur):
+    """Le bouton « Signé » écrit dans le statut."""
+    if valeur not in ("oui", "non"):
+        return None, ERREUR_CHAMP
+    return ("statut", "signé" if valeur == "oui" else STATUT_SI_NON_SIGNE), None
+
+
+def valider_champ(champ, valeur):
+    """Renvoie ((colonne, valeur propre), None) ou (None, erreur)."""
+    if not isinstance(champ, str) or isinstance(valeur, bool) or not isinstance(valeur, (str, int)):
+        return None, ERREUR_CHAMP
+    if champ == "signe":
+        return _champ_signe(valeur)
+    if champ not in CHAMPS_RAPIDES:
+        return None, ERREUR_CHAMP
+    erreurs = {}
+    propre = CHAMPS_RAPIDES[champ]({champ: str(valeur)}, erreurs)
+    if erreurs or (propre is None and champ in CHAMPS_OBLIGATOIRES):
+        return None, erreurs.get(champ, ERREUR_CHAMP)
+    return (champ, propre), None
+
+
+def mettre_a_jour_champ(conn, code, colonne, valeur):
+    """Enregistre un seul champ déjà validé par valider_champ."""
+    if colonne != "statut" and colonne not in CHAMPS_RAPIDES:
+        raise ValueError("Colonne non autorisée.")
+    conn.execute(f"UPDATE prospects SET {colonne} = ? WHERE code = ?", (valeur, code))
     conn.commit()
 
 

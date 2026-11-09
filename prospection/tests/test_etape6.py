@@ -15,13 +15,18 @@ from conftest import FAUX_EXPORT, formulaire_valide
 
 def prospect(**changements):
     """Prospect fictif, avec tous les champs sensibles remplis."""
-    valeurs = {"code": "P001", "nom_entreprise": "Nom Fictif Secret", "texte_envoye": "Texte fictif secret",
+    valeurs = {"id": 1, "reponse_automatique": None, "a_deja_site": None,
+               "code": "P001", "nom_entreprise": "Nom Fictif Secret", "texte_envoye": "Texte fictif secret",
                "conversation_fb": "999888777", "ville": "Ville Fictive", "metier": "métier fictif",
                "date_premier_message": "2026-10-05", "date_reponse": None, "dates_estimees": 0,
                "canal": "Messenger", "version_message": "A", "interet": "aucun", "statut": "contacté",
                "tarif_propose": 1234, "acompte": 567}
     valeurs.update(changements)
     return valeurs
+
+
+def csv_de(prospects, relances=None):
+    return exports.csv_anonymise(prospects, relances or {})
 
 
 def lire_csv(texte):
@@ -89,33 +94,35 @@ def test_type_de_reponse(changements, attendu):
 
 
 def test_colonnes_exactes():
-    premiere_ligne = exports.csv_anonymise([prospect()]).splitlines()[0]
+    premiere_ligne = csv_de([prospect()]).splitlines()[0]
     assert premiere_ligne == ("code,date_premier_message,date_reponse,dates_estimees,"
-                              "canal,version_message,type_reponse,interet,statut")
+                              "canal,version_message,type_reponse,reponse_automatique,"
+                              "nb_relances,interet,statut,a_deja_site")
 
 
 def test_contenu_d_une_ligne():
-    assert lire_csv(exports.csv_anonymise([prospect(date_reponse="2026-10-06", dates_estimees=1)]))[0] == {
+    assert lire_csv(csv_de([prospect(date_reponse="2026-10-06", dates_estimees=1)]))[0] == {
         "code": "P001", "date_premier_message": "2026-10-05", "date_reponse": "2026-10-06",
         "dates_estimees": "oui", "canal": "Messenger", "version_message": "A",
-        "type_reponse": "réponse", "interet": "aucun", "statut": "contacté"}
+        "type_reponse": "réponse", "reponse_automatique": "", "nb_relances": "0",
+        "interet": "aucun", "statut": "contacté", "a_deja_site": "inconnu"}
 
 
 @pytest.mark.parametrize("secret", ["Nom Fictif Secret", "Texte fictif secret", "999888777",
                                     "Ville Fictive", "métier fictif", "1234", "567"])
 def test_aucun_champ_sensible(secret):
-    assert secret not in exports.csv_anonymise([prospect()])
+    assert secret not in csv_de([prospect()])
 
 
 def test_tri_par_date_puis_code():
     groupe = [prospect(code="P3", date_premier_message="2026-10-06"),
               prospect(code="P2", date_premier_message="2026-10-05"),
               prospect(code="P1", date_premier_message="2026-10-05")]
-    assert [l["code"] for l in lire_csv(exports.csv_anonymise(groupe))] == ["P1", "P2", "P3"]
+    assert [l["code"] for l in lire_csv(csv_de(groupe))] == ["P1", "P2", "P3"]
 
 
 def test_csv_vide_garde_l_entete():
-    assert exports.csv_anonymise([]).count("\n") == 1
+    assert csv_de([]).count("\n") == 1
 
 
 # --- L'Excel ------------------------------------------------------------------
@@ -145,7 +152,7 @@ def test_quatre_feuilles():
 def test_chiffres_du_resume():
     feuille = ouvrir(exports_excel.classeur(exemple(), None, None))["Résumé"]
     assert (feuille["A5"].value, feuille["B5"].value) == ("Contacts", 3)
-    assert (feuille["A6"].value, feuille["B6"].value) == ("Réponses", 1)
+    assert (feuille["A6"].value, feuille["B6"].value) == ("Vraies réponses", 1)
 
 
 def test_le_taux_est_une_formule():
@@ -183,9 +190,9 @@ def test_graphiques_presents():
 
 def test_titre_et_legende_hors_du_trace():
     graphique = ouvrir(exports_excel.classeur(exemple(), None, None))["Semaines"]._charts[0]
-    assert graphique.title.overlay is False
-    assert graphique.y_axis.title.overlay is False
-    assert (graphique.legend.position, graphique.legend.overlay) == ("t", False)
+    assert not graphique.title.overlay
+    assert not graphique.y_axis.title.overlay
+    assert graphique.legend.position == "t" and not graphique.legend.overlay
 
 
 def test_une_seule_serie_sans_legende():
@@ -205,7 +212,7 @@ def test_excel_sans_aucun_prospect():
 
 def test_trop_peu_ecrit_dans_l_excel():
     feuille = ouvrir(exports_excel.classeur(exemple(), None, None))["Versions AB"]
-    assert feuille["K2"].value == "Trop peu de données pour conclure"
+    assert feuille["N2"].value == "Trop peu de données pour conclure"
 
 
 @pytest.mark.parametrize("secret", ["Nom Fictif Secret", "Texte fictif secret", "999888777", "P001"])

@@ -7,6 +7,8 @@
     <td>{{ l.contacts }}</td>
     <td>{{ l.reponses }}</td>
     <td>{{ l.taux_reponse|pourcent }}</td>
+    <td>{{ l.automatiques }}</td>
+    <td>{{ l.a_verifier }}</td>
     <td>
       {% if l.bas is none %}—{% else %}
         {{ l.bas|pourcent }} à {{ l.haut|pourcent }}
@@ -24,7 +26,7 @@
 <div class="defilement">
 <table class="chiffres">
   <thead>
-    <tr><th>{{ titre_colonne }}</th><th>Contacts</th><th>Réponses</th><th>Taux</th><th>Intervalle à 95 %</th><th></th></tr>
+    <tr><th>{{ titre_colonne }}</th><th>Contacts</th><th>Vraies réponses</th><th>Taux</th><th>Automatiques</th><th>À vérifier</th><th>Intervalle à 95 %</th><th></th></tr>
   </thead>
   <tbody>{% for l in lignes %}{{ ligne_taux(l, trop_peu) }}{% endfor %}</tbody>
 </table>
@@ -40,9 +42,14 @@
 
 <section class="tuiles">
   <div class="tuile">
-    <span class="tuile-titre">Taux de réponse</span>
+    <span class="tuile-titre">Taux de vraies réponses</span>
     <strong>{{ total.taux_reponse|pourcent }}</strong>
     <span class="tuile-detail">{{ total.reponses }} sur {{ total.contacts }}</span>
+  </div>
+  <div class="tuile">
+    <span class="tuile-titre">Réponses automatiques</span>
+    <strong>{{ total.automatiques }}</strong>
+    <span class="tuile-detail">+ {{ total.a_verifier }} à vérifier</span>
   </div>
   <div class="tuile">
     <span class="tuile-titre">Intervalle de confiance à 95 %</span>
@@ -66,7 +73,7 @@
 <ul class="note">
   <li>L'intervalle donne les valeurs plausibles du taux de réponse. Plus il y a de contacts, plus il est étroit.</li>
   <li>Un écart significatif ne dit pas pourquoi une version marche mieux : si A et B n'ont pas été envoyées aux mêmes périodes ou aux mêmes métiers, autre chose peut l'expliquer.</li>
-  <li>Toute réponse compte, y compris une réponse automatique d'une Page ou un refus poli.</li>
+  <li>Le taux compte les vraies réponses, y compris un refus poli. Les réponses automatiques et celles à vérifier sont à part : tant qu'elles ne sont pas corrigées dans <a href="{{ url_for('qualifier.page_qualifier') }}">Qualifier</a>, le vrai taux est peut-être un peu plus haut.</li>
 </ul>
 
 {% endif %}

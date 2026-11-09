@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS prospects (
     a_deja_site           INTEGER,                   -- 1 = oui, 0 = non, vide = inconnu
     dates_estimees        INTEGER NOT NULL DEFAULT 0, -- 1 = dates reconstituées de mémoire
     conversation_fb       TEXT,                      -- identifiant de la conversation Facebook importée
+    reponse_automatique   TEXT,                      -- 'oui', 'non', 'à vérifier' ; vide = pas de détection
     cree_le              TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
