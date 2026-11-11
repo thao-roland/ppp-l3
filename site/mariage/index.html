@@ -26,10 +26,6 @@
     /* ---------- Page ---------- */
     body {
       margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       background: var(--papier);
       color: var(--encre);
       font-family: "Jost", sans-serif;
@@ -37,11 +33,38 @@
       line-height: 1.55;
     }
 
-    /* ---------- Carte ---------- */
+    /* ---------- Cartes : chacune prend la hauteur de l'écran ---------- */
     .carte {
-      max-width: 410px;
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       padding: 40px 22px;
+    }
+
+    .contenu {
+      max-width: 410px;
       text-align: center;
+    }
+
+    /* Un trait fin pour séparer deux cartes */
+    .carte + .carte {
+      border-top: 1px solid var(--rose-clair);
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-family: "Allura", cursive;
+      font-size: 52px;
+      font-weight: 400;
+      line-height: 1;
+    }
+
+    h2 .coeur {
+      font-size: 20px;
+      vertical-align: top;
+      margin-left: 6px;
     }
 
     h1 {
@@ -139,27 +162,41 @@
 </head>
 <body>
 
-  <main class="carte">
-    <h1>L., L. &amp; T.</h1>
-    <p class="petit-titre">vous invitent à célébrer leur mariage</p>
-    <p class="date">20 septembre 2026<span>•</span>15h00</p>
-    <p class="petit-titre">Domaine des Oliviers · Bord de mer</p>
+  <!-- Carte 1 : invitation -->
+  <section class="carte">
+    <div class="contenu">
+      <h1>L., L. &amp; T.</h1>
+      <p class="petit-titre">vous invitent à célébrer leur mariage</p>
+      <p class="date">20 septembre 2026<span>•</span>15h00</p>
+      <p class="petit-titre">Domaine des Oliviers · Bord de mer</p>
 
-    <p class="manuscrit">
-      Les pieds dans le sable, le soleil au-dessus de nous et les personnes que nous aimons autour de nous…
-      <span class="coeur">♥</span>
-    </p>
+      <p class="manuscrit">
+        Les pieds dans le sable, le soleil au-dessus de nous et les personnes que nous aimons autour de nous…
+        <span class="coeur">♥</span>
+      </p>
 
-    <div class="cadre">
-      <div class="illustration" role="img" aria-label="Illustration : coucher de soleil sur la mer">
-        <div class="soleil"></div>
-        <div class="mer"></div>
+      <div class="cadre">
+        <div class="illustration" role="img" aria-label="Illustration : coucher de soleil sur la mer">
+          <div class="soleil"></div>
+          <div class="mer"></div>
+        </div>
+        <div class="sceau" aria-hidden="true">L&amp;L</div>
       </div>
-      <div class="sceau" aria-hidden="true">L&amp;L</div>
-    </div>
 
-    <p>Sans vraiment nous en rendre compte, les jours sont devenus des mois, les mois des années… et voilà bientôt 10 ans que nous avançons ensemble.</p>
-  </main>
+      <p>Sans vraiment nous en rendre compte, les jours sont devenus des mois, les mois des années… et voilà bientôt 10 ans que nous avançons ensemble.</p>
+    </div>
+  </section>
+
+  <!-- Carte 2 : notre histoire -->
+  <section class="carte">
+    <div class="contenu">
+      <h2>Notre histoire<span class="coeur">♥</span></h2>
+      <p>Il y a presque 10 ans, notre histoire a commencé de la manière la plus inattendue… lors d'un simple vide-dressing.</p>
+      <p>Et puis il y a eu cette rencontre, ce coup de foudre immédiat et cette évidence.</p>
+      <p>Je suis tombée amoureuse de L. parce qu'il me faisait rire. Avec lui, chaque moment était simple, léger et rempli de bonheur. Et encore aujourd'hui, il aime me rappeler que ce qui l'a fait craquer au premier regard, c'est ma beauté. <span class="coeur">♥</span></p>
+      <p>Sans vraiment nous en rendre compte, les jours sont devenus des mois, les mois des années… et voilà bientôt 10 ans que nous avançons ensemble.</p>
+    </div>
+  </section>
 
 </body>
 </html>
