@@ -112,6 +112,59 @@
       color: var(--encre);
     }
 
+    /* ---------- Programme de la journée : une frise verticale ---------- */
+    .programme {
+      margin: 0 0 22px;
+      padding: 0;
+      list-style: none;
+      text-align: left;
+    }
+
+    .programme li {
+      position: relative;
+      padding: 0 0 18px 26px;
+      border-left: 2px solid var(--rose-clair);   /* le trait de la frise */
+    }
+
+    .programme li:last-child {
+      border-left-color: transparent;
+      padding-bottom: 0;
+    }
+
+    /* Le point sur la frise, devant chaque étape */
+    .programme li::before {
+      content: "";
+      position: absolute;
+      left: -7px;
+      top: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--sauge);
+      border: 2px solid var(--papier);
+    }
+
+    .heure {
+      display: block;
+      color: var(--sauge);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+
+    .etape {
+      margin: 0;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    .detail {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: var(--encre-douce);
+      line-height: 1.4;
+    }
+
     /* ---------- Illustration en CSS : coucher de soleil sur la mer ---------- */
     .cadre {
       position: relative;
@@ -213,6 +266,54 @@
       <p>Alors aujourd'hui, après toutes ces années, nous avons décidé de nous dire oui.</p>
       <p>Et évidemment, nous ne pouvions pas imaginer cette journée <b>sans notre petite T. à nos côtés</b>.</p>
       <p class="manuscrit">Notre famille de trois va donc se marier au bord de la Méditerranée. <span class="coeur">♥</span></p>
+      <p>Sans vraiment nous en rendre compte, les jours sont devenus des mois, les mois des années… et voilà bientôt 10 ans que nous avançons ensemble.</p>
+    </div>
+  </section>
+
+  <!-- Carte 4 : notre journée -->
+  <section class="carte">
+    <div class="contenu">
+      <h2>Notre journée<span class="coeur">♥</span></h2>
+
+      <ol class="programme">
+        <li>
+          <span class="heure">8h30</span>
+          <p class="etape">Préparation des demoiselles &amp; messieurs d'honneur</p>
+          <p class="detail">La journée commence un peu plus tôt pour eux : on se retrouve pour les préparatifs avant de rejoindre les invités.</p>
+        </li>
+        <li>
+          <span class="heure">12h00</span>
+          <p class="etape">Cérémonie sur la plage</p>
+          <p class="detail">Les pieds dans le sable, face à la Méditerranée. Vous pouvez arriver plus tôt et profiter du camping avant.</p>
+        </li>
+        <li>
+          <span class="heure">13h00</span>
+          <p class="etape">Direction la fête</p>
+          <p class="detail">Après la cérémonie, on se retrouve tous à l'espace de réception.</p>
+        </li>
+        <li>
+          <span class="heure">13h30</span>
+          <p class="etape">Entrée des mariés &amp; vin d'honneur</p>
+          <p class="detail">Place à l'apéritif dînatoire. On mange, on trinque, on profite… et on commence à faire la fête !</p>
+        </li>
+        <li>
+          <span class="heure">18h00</span>
+          <p class="etape">Paella</p>
+          <p class="detail">Une grande paella servie à table.</p>
+        </li>
+        <li>
+          <span class="heure">19h30</span>
+          <p class="etape">Ouverture du bal</p>
+          <p class="detail">Après le repas, place à la musique et à la fête !</p>
+        </li>
+        <li>
+          <span class="heure">21h00</span>
+          <p class="etape">Dessert</p>
+          <p class="detail">Crème catalane &amp; tiramisu.</p>
+        </li>
+      </ol>
+
+      <p class="manuscrit">Et après ça… la soirée continue !</p>
       <p>Sans vraiment nous en rendre compte, les jours sont devenus des mois, les mois des années… et voilà bientôt 10 ans que nous avançons ensemble.</p>
     </div>
   </section>
